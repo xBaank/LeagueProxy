@@ -13,6 +13,7 @@ import okio.buffer
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import proxies.LeagueNotFoundException
+import proxies.RtmpInterceptor
 import proxies.rtmpProxy
 import simpleJson.asString
 import simpleJson.deserialized
@@ -25,8 +26,8 @@ val yaml = Yaml(yamlOptions)
 
 data class LcdsHost(val host: String, val port: Int)
 
-fun proxies(hosts: Map<String, LcdsHost>) = hosts.map { (region, lcds) ->
-    val proxyClient = rtmpProxy(lcds.host, lcds.port)
+fun proxies(hosts: Map<String, LcdsHost>, interceptor: RtmpInterceptor) = hosts.map { (region, lcds) ->
+    val proxyClient = rtmpProxy(lcds.host, lcds.port, interceptor)
     val port = proxyClient.serverSocket.localAddress.port
     proxyHosts[region] = LcdsHost("127.0.0.1", port)
     println("Created proxy for $region on port $port")

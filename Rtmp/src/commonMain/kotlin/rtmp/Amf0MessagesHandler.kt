@@ -9,8 +9,6 @@ import rtmp.packets.*
 import kotlin.collections.set
 
 internal const val CHUNK_SIZE = 128
-
-
 internal const val TIMESTAMP_SIZE = 3
 internal const val LENGTH_SIZE = 3
 internal const val MESSAGE_ID_SIZE = 4

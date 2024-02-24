@@ -10,11 +10,13 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import proxies.RtmpInterceptType.Request
+import proxies.RtmpInterceptType.Response
 import rtmp.Amf0MessagesHandler
 import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
 
-private const val SOLOQ_ID = 420
+typealias RtmpInterceptor = (RtmpInterceptType, List<Amf0Node>) -> List<Amf0Node>
 
 private suspend fun handshake(
     serverReadChannel: ByteReadChannel,
@@ -46,17 +48,18 @@ private suspend fun handshake(
     clientWriteChannel.writeFully(c1Echo, 0, c1Echo.size)
 }
 
-fun rtmpProxy(host: String, port: Int): RtmpProxy {
+fun rtmpProxy(host: String, port: Int, interceptor: RtmpInterceptor): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
-    return RtmpProxy(socketServer, host, port)
+    return RtmpProxy(socketServer, host, port, interceptor)
 }
 
 class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     private val host: String,
     private val port: Int,
+    private val interceptor: RtmpInterceptor
 ) {
     suspend fun start() = coroutineScope {
         while (isActive) {
@@ -95,20 +98,14 @@ class RtmpProxy internal constructor(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = clientReadChannel,
             output = serverWriteChannel,
-            interceptor = {
-                println("RESPONSE")
-                log(it)
-            }
+            interceptor = { interceptor(Response, it) }
         )
 
         val outputMessageHandler = Amf0MessagesHandler(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = serverReadChannel,
             output = clientWriteChannel,
-            interceptor = {
-                println("REQUEST")
-                log(it)
-            }
+            interceptor = { interceptor(Request, it) }
         )
 
         launch(Dispatchers.IO) {
@@ -118,10 +115,5 @@ class RtmpProxy internal constructor(
         launch(Dispatchers.IO) {
             outputMessageHandler.start()
         }
-    }
-
-    private fun log(nodes: List<Amf0Node>): List<Amf0Node> {
-        println(nodes)
-        return nodes
     }
 }
