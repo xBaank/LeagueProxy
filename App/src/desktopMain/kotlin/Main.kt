@@ -4,14 +4,26 @@ import androidx.compose.ui.window.awaitApplication
 import io.ktor.utils.io.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import org.koin.core.context.startKoin
 import proxies.LeagueNotFoundException
-import proxies.utils.*
+import proxies.client.ClientProxy
+import proxies.client.SystemYamlPatcher
+import proxies.utils.askForClose
+import proxies.utils.isRiotClientRunning
+import proxies.utils.killRiotClient
+import proxies.utils.showError
 
 suspend fun main() = awaitApplication {
     var isVisible by remember { mutableStateOf(false) }
+
+    startKoin {
+        modules(module)
+    }
+
     LaunchedEffect(Unit) {
         launch { proxies(onStarted = { isVisible = true }, onClose = ::exitApplication) }
     }
+
     Window(onCloseRequest = ::exitApplication, visible = isVisible, title = "ComposeDemo") {
         App()
     }
@@ -30,28 +42,24 @@ private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = corout
         }
     }
 
-    val hosts = getHosts()
-    proxies(hosts) { type, nodes ->
-        println(type)
-        println(nodes)
-        nodes
-    }.forEach { launch { it.start() } }
-
-    runCatching {
-        val job = launch { startClient(hosts = hosts, onClose = onClose) }
-        onStarted()
-        job.join()
-    }.onFailure {
-        if (it is LeagueNotFoundException) {
-            showError(it.message ?: "", "League of Legends not found")
-            return@onFailure
+    val clientProxy = ClientProxy(SystemYamlPatcher(), onClientClose = onClose)
+    clientProxy.use {
+        launch { clientProxy.startProxies() }
+        runCatching {
+            val job = launch { clientProxy.startClient() }
+            onStarted()
+            job.join()
+        }.onFailure {
+            if (it is LeagueNotFoundException) {
+                showError(it.message ?: "", "League of Legends not found")
+                return@onFailure
+            }
+            if (it is CancellationException) {
+                return@onFailure
+            }
+            showError(it.stackTraceToString(), it.message ?: "An error happened")
+            it.printStack()
         }
-        if (it is CancellationException) {
-            return@onFailure
-        }
-        showError(it.stackTraceToString(), it.message ?: "An error happened")
-        it.printStack()
     }
-
 }
 

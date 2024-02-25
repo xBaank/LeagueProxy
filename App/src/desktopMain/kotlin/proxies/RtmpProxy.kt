@@ -10,56 +10,24 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import proxies.RtmpInterceptType.Request
-import proxies.RtmpInterceptType.Response
+import proxies.interceptors.IProxyInterceptor
 import rtmp.Amf0MessagesHandler
 import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
 
-typealias RtmpInterceptor = (RtmpInterceptType, List<Amf0Node>) -> List<Amf0Node>
 
-private suspend fun handshake(
-    serverReadChannel: ByteReadChannel,
-    clientWriteChannel: ByteWriteChannel,
-    clientReadChannel: ByteReadChannel,
-    serverWriteChannel: ByteWriteChannel
-) {
-    //TODO Could we use the same handshake for all connections so we don't allocate 1536 bytes for each connection?
-    val c0 = serverReadChannel.readByte()
-    clientWriteChannel.writeByte(c0)
-    val c1 = ByteArray(1536)
-    serverReadChannel.readFully(c1, 0, c1.size)
-    clientWriteChannel.writeFully(c1, 0, c1.size)
-
-    val s0 = clientReadChannel.readByte()
-    serverWriteChannel.writeByte(s0)
-    val s1 = ByteArray(1536)
-    clientReadChannel.readFully(s1, 0, s1.size)
-    serverWriteChannel.writeFully(s1, 0, s1.size)
-
-    if (s0 != c0) throw IllegalStateException("c0 and s0 are not equal")
-
-    val s0Echo = ByteArray(1536)
-    clientReadChannel.readFully(s0Echo, 0, s0Echo.size)
-    serverWriteChannel.writeFully(s0Echo, 0, s0Echo.size)
-
-    val c1Echo = ByteArray(1536)
-    serverReadChannel.readFully(c1Echo, 0, c1Echo.size)
-    clientWriteChannel.writeFully(c1Echo, 0, c1Echo.size)
-}
-
-fun rtmpProxy(host: String, port: Int, interceptor: RtmpInterceptor): RtmpProxy {
+fun RtmpProxy(host: String, port: Int, proxieEventHandler: IProxyInterceptor<List<Amf0Node>>): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
-    return RtmpProxy(socketServer, host, port, interceptor)
+    return RtmpProxy(socketServer, host, port, proxieEventHandler)
 }
 
 class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     private val host: String,
     private val port: Int,
-    private val interceptor: RtmpInterceptor
+    private val interceptor: IProxyInterceptor<List<Amf0Node>>
 ) {
     suspend fun start() = coroutineScope {
         while (isActive) {
@@ -98,14 +66,14 @@ class RtmpProxy internal constructor(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = clientReadChannel,
             output = serverWriteChannel,
-            interceptor = { interceptor(Response, it) }
+            interceptor = interceptor::onResponse
         )
 
         val outputMessageHandler = Amf0MessagesHandler(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = serverReadChannel,
             output = clientWriteChannel,
-            interceptor = { interceptor(Request, it) }
+            interceptor = interceptor::onRequest
         )
 
         launch(Dispatchers.IO) {
@@ -115,5 +83,35 @@ class RtmpProxy internal constructor(
         launch(Dispatchers.IO) {
             outputMessageHandler.start()
         }
+    }
+
+    private suspend fun handshake(
+        serverReadChannel: ByteReadChannel,
+        clientWriteChannel: ByteWriteChannel,
+        clientReadChannel: ByteReadChannel,
+        serverWriteChannel: ByteWriteChannel
+    ) {
+        //TODO Could we use the same handshake for all connections so we don't allocate 1536 bytes for each connection?
+        val c0 = serverReadChannel.readByte()
+        clientWriteChannel.writeByte(c0)
+        val c1 = ByteArray(1536)
+        serverReadChannel.readFully(c1, 0, c1.size)
+        clientWriteChannel.writeFully(c1, 0, c1.size)
+
+        val s0 = clientReadChannel.readByte()
+        serverWriteChannel.writeByte(s0)
+        val s1 = ByteArray(1536)
+        clientReadChannel.readFully(s1, 0, s1.size)
+        serverWriteChannel.writeFully(s1, 0, s1.size)
+
+        if (s0 != c0) throw IllegalStateException("c0 and s0 are not equal")
+
+        val s0Echo = ByteArray(1536)
+        clientReadChannel.readFully(s0Echo, 0, s0Echo.size)
+        serverWriteChannel.writeFully(s0Echo, 0, s0Echo.size)
+
+        val c1Echo = ByteArray(1536)
+        serverReadChannel.readFully(c1Echo, 0, c1Echo.size)
+        clientWriteChannel.writeFully(c1Echo, 0, c1Echo.size)
     }
 }

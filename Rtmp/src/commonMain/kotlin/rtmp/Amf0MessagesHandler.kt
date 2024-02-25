@@ -18,7 +18,7 @@ class Amf0MessagesHandler(
     private val incomingPartialRawMessages: MutableMap<Byte, RawRtmpPacket> = mutableMapOf(),
     private val input: ByteReadChannel,
     private val output: ByteWriteChannel,
-    private val interceptor: (List<Amf0Node>) -> List<Amf0Node>
+    private val interceptor: suspend (List<Amf0Node>) -> List<Amf0Node>
 ) {
 
     private val payloadBuffer = ByteArray(CHUNK_SIZE)
@@ -61,7 +61,7 @@ class Amf0MessagesHandler(
 
     private suspend fun handle(packet: RawRtmpPacket): Unit = coroutineScope {
         if (packet.header is RTMPPacketHeader0 && packet.header.messageTypeId.toInt() == 0x14) {
-            val message = AMF0Decoder(packet.payload, amfLists).decodeAll().let(interceptor)
+            val message = interceptor(AMF0Decoder(packet.payload, amfLists).decodeAll())
             val newMessageRaw = Buffer()
             Amf0Encoder(newMessageRaw).encodeAll(message)
             val newHeader = RTMPPacketHeader0(

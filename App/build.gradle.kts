@@ -31,6 +31,8 @@ kotlin {
             implementation("com.squareup.okio:okio:3.3.0")
             // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
             implementation("com.squareup.okhttp3:okhttp:4.11.0")
+            // https://mvnrepository.com/artifact/io.insert-koin/koin-core
+            implementation("io.insert-koin:koin-core:3.5.3")
             // Check the 🔝 maven central badge 🔝 for the latest $kotlinProcessVersion
             implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
             implementation(project(":Rtmp"))
