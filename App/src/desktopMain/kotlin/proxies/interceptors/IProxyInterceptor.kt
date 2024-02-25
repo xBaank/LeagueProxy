@@ -1,6 +1,6 @@
 package proxies.interceptors
 
-interface IProxyInterceptor<T> {
-    suspend fun onRequest(value: T): T
-    suspend fun onResponse(value: T): T
+interface IProxyInterceptor<T, R> {
+    suspend fun onRequest(value: T): R
+    suspend fun onResponse(value: T): R
 }

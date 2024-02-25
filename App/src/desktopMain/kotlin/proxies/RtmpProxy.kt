@@ -11,12 +11,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import proxies.interceptors.IProxyInterceptor
+import proxies.interceptors.RtmpCall
 import rtmp.Amf0MessagesHandler
 import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
 
 
-fun RtmpProxy(host: String, port: Int, proxieEventHandler: IProxyInterceptor<List<Amf0Node>>): RtmpProxy {
+fun RtmpProxy(host: String, port: Int, proxieEventHandler: IProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -27,7 +28,7 @@ class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     val host: String,
     val port: Int,
-    private val interceptor: IProxyInterceptor<List<Amf0Node>>
+    private val interceptor: IProxyInterceptor<List<Amf0Node>, RtmpCall>
 ) {
     suspend fun start() = coroutineScope {
         while (isActive) {
@@ -66,14 +67,14 @@ class RtmpProxy internal constructor(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = clientReadChannel,
             output = serverWriteChannel,
-            interceptor = interceptor::onResponse
+            interceptor = { interceptor.onResponse(it).data }
         )
 
         val outputMessageHandler = Amf0MessagesHandler(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = serverReadChannel,
             output = clientWriteChannel,
-            interceptor = interceptor::onRequest
+            interceptor = { interceptor.onRequest(it).data }
         )
 
         launch(Dispatchers.IO) {
