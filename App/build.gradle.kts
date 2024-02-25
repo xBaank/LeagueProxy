@@ -18,10 +18,10 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material)
             implementation(compose.ui)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
+            implementation(compose.material3)
             implementation("io.ktor:ktor-network:$ktor_version")
             implementation("io.ktor:ktor-network-tls:$ktor_version")
             implementation("io.arrow-kt:arrow-core:1.2.1")
@@ -33,6 +33,9 @@ kotlin {
             implementation("com.squareup.okhttp3:okhttp:4.11.0")
             // https://mvnrepository.com/artifact/io.insert-koin/koin-core
             implementation("io.insert-koin:koin-core:3.5.3")
+            // https://mvnrepository.com/artifact/io.insert-koin/koin-compose
+            implementation("io.insert-koin:koin-compose:1.1.2")
+
             // Check the 🔝 maven central badge 🔝 for the latest $kotlinProcessVersion
             implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
             implementation(project(":Rtmp"))

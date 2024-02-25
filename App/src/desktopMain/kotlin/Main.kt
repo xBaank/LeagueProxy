@@ -1,47 +1,38 @@
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.awaitApplication
+import client.ClientProxy
+import client.SystemYamlPatcher
+import exceptions.LeagueNotFoundException
 import io.ktor.utils.io.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.koin.core.context.startKoin
-import proxies.LeagueNotFoundException
-import proxies.client.ClientProxy
-import proxies.client.SystemYamlPatcher
-import proxies.utils.askForClose
 import proxies.utils.isRiotClientRunning
-import proxies.utils.killRiotClient
 import proxies.utils.showError
+import view.App
 
-suspend fun main() = awaitApplication {
-    var isVisible by remember { mutableStateOf(false) }
+suspend fun main() {
+    startKoin { modules(module) }
 
-    startKoin {
-        modules(module)
-    }
+    awaitApplication {
+        val isRiotClientOpened = remember { mutableStateOf(runBlocking { !isRiotClientRunning() }) }
 
-    LaunchedEffect(Unit) {
-        launch { proxies(onStarted = { isVisible = true }, onClose = ::exitApplication) }
-    }
+        LaunchedEffect(isRiotClientOpened.value) {
+            if (!isRiotClientOpened.value) return@LaunchedEffect
+            launch { proxies(onStarted = {}, onClose = ::exitApplication) }
+        }
 
-    Window(onCloseRequest = ::exitApplication, visible = isVisible, title = "ComposeDemo") {
-        App()
+        Window(onCloseRequest = ::exitApplication, title = "ComposeDemo") {
+            App(isRiotClientOpened)
+        }
     }
 }
 
 private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = coroutineScope {
-    if (isRiotClientRunning()) {
-        val wantsToClose = askForClose(
-            "Do you want to close it? If you dont close it LeagueProxy won't be launched",
-            "Riot Client is already running"
-        )
-        if (wantsToClose) killRiotClient()
-        else {
-            onClose()
-            return@coroutineScope
-        }
-    }
-
     val clientProxy = ClientProxy(SystemYamlPatcher(), onClientClose = onClose)
     clientProxy.use {
         launch { clientProxy.startProxies() }
@@ -62,4 +53,3 @@ private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = corout
         }
     }
 }
-

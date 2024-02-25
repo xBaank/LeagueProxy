@@ -1,4 +1,4 @@
-package proxies.extensions
+package extensions
 
 import io.ktor.network.sockets.*
 

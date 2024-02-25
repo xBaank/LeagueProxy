@@ -25,8 +25,8 @@ fun RtmpProxy(host: String, port: Int, proxieEventHandler: IProxyInterceptor<Lis
 
 class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
-    private val host: String,
-    private val port: Int,
+    val host: String,
+    val port: Int,
     private val interceptor: IProxyInterceptor<List<Amf0Node>>
 ) {
     suspend fun start() = coroutineScope {

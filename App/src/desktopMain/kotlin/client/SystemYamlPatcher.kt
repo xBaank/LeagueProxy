@@ -1,6 +1,8 @@
-package proxies.client
+package client
 
 import arrow.core.getOrElse
+import exceptions.LeagueNotFoundException
+import extensions.getMap
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
@@ -8,15 +10,11 @@ import okio.buffer
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.yaml.snakeyaml.Yaml
-import proxies.LeagueNotFoundException
-import proxies.extensions.getMap
 import simpleJson.asString
 import simpleJson.deserialized
 import simpleJson.get
 
-class SystemYamlPatcher(
-    val proxyHosts: Map<String, LcdsHost>
-) : KoinComponent, AutoCloseable {
+class SystemYamlPatcher : KoinComponent, AutoCloseable {
     val yaml by inject<Yaml>()
 
     val riotClientPath: String
@@ -24,6 +22,7 @@ class SystemYamlPatcher(
     val systemYamlPath: Path
     val systemYamlContent: Map<String, Any>
     val lcdsHosts: Map<String, LcdsHost>
+    private val systemYamlContentCopy: Map<String, Any>
 
     init {
         val (riotClientPath, lolPath) = getLolPaths()
@@ -33,9 +32,11 @@ class SystemYamlPatcher(
         val hosts = getHosts()
         this.lcdsHosts = hosts
 
-        val (systemYamlPath, systemYamlContent) = patchSystemYaml(lolPath, proxyHosts)
+        val (systemYamlPath, systemYamlContent) = getSystemYaml(lolPath)
+        val (_, systemYamlContentCopy) = getSystemYaml(lolPath)
         this.systemYamlPath = systemYamlPath
         this.systemYamlContent = systemYamlContent
+        this.systemYamlContentCopy = systemYamlContentCopy
     }
 
     private fun getLolPaths(): Pair<String, String> {
@@ -62,16 +63,20 @@ class SystemYamlPatcher(
         return Pair(riotClientPath, lolPath)
     }
 
-    private fun patchSystemYaml(
-        lolPath: String,
-        hosts: Map<String, LcdsHost>
+    private fun getSystemYaml(
+        lolPath: String
     ): Pair<Path, Map<String, Any>> {
         val systemYamlPath = lolPath.toPath(true).resolve("system.yaml")
         val systemYaml = FileSystem.SYSTEM.source(systemYamlPath).buffer().use { it.readUtf8() }
-        val systemYamlMap = yaml.load<Map<String, Any>>(systemYaml)
         val systemYamlMapOriginal = yaml.load<Map<String, Any>>(systemYaml)
 
-        systemYamlMap.getMap("region_data").forEach {
+        return Pair(systemYamlPath, systemYamlMapOriginal)
+    }
+
+    fun patchSystemYaml(
+        hosts: Map<String, LcdsHost>,
+    ) {
+        systemYamlContent.getMap("region_data").forEach {
             val region = it.key
             if (!hosts.containsKey(region)) return@forEach
             val lcds = it.value.getMap("servers").getMap("lcds") as MutableMap<String, Any?>
@@ -80,8 +85,7 @@ class SystemYamlPatcher(
             lcds["use_tls"] = false
         }
 
-        FileSystem.SYSTEM.sink(systemYamlPath).buffer().use { it.writeUtf8(yaml.dump(systemYamlMap)) }
-        return Pair(systemYamlPath, systemYamlMapOriginal)
+        FileSystem.SYSTEM.sink(systemYamlPath).buffer().use { it.writeUtf8(yaml.dump(systemYamlContent)) }
     }
 
     private fun getHosts(): Map<String, LcdsHost> {
@@ -102,6 +106,6 @@ class SystemYamlPatcher(
     }
 
     override fun close() {
-        FileSystem.SYSTEM.sink(systemYamlPath).buffer().use { it.writeUtf8(yaml.dump(systemYamlContent)) }
+        FileSystem.SYSTEM.sink(systemYamlPath).buffer().use { it.writeUtf8(yaml.dump(systemYamlContentCopy)) }
     }
 }
