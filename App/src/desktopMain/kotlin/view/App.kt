@@ -12,18 +12,18 @@ import proxies.utils.killRiotClient
 import view.theme.DarkColors
 
 @Composable
-fun ApplicationScope.App(isRiotClientOpened: MutableState<Boolean>) {
+fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     MaterialTheme(colorScheme = DarkColors) {
         Surface(
             color = MaterialTheme.colorScheme.background,
             modifier = Modifier.fillMaxSize()
         ) {
-            if (!isRiotClientOpened.value) {
+            if (!isRiotClientClosed.value) {
                 AlertDialog(
                     onDismissRequest = ::exitApplication,
                     onConfirmation = {
                         runBlocking { killRiotClient() }
-                        isRiotClientOpened.value = true
+                        isRiotClientClosed.value = true
                     },
                     dialogTitle = "Riot Client is already running",
                     dialogText = "Do you want to close it? If you dont close it LeagueProxy won't be launched"

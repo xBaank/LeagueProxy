@@ -19,15 +19,15 @@ suspend fun main() {
     startKoin { modules(module) }
 
     awaitApplication {
-        val isRiotClientOpened = remember { mutableStateOf(runBlocking { !isRiotClientRunning() }) }
+        val isRiotClientClosed = remember { mutableStateOf(runBlocking { !isRiotClientRunning() }) }
 
-        LaunchedEffect(isRiotClientOpened.value) {
-            if (!isRiotClientOpened.value) return@LaunchedEffect
+        LaunchedEffect(isRiotClientClosed.value) {
+            if (!isRiotClientClosed.value) return@LaunchedEffect
             launch { proxies(onStarted = {}, onClose = ::exitApplication) }
         }
 
         Window(onCloseRequest = ::exitApplication, title = "ComposeDemo") {
-            App(isRiotClientOpened)
+            App(isRiotClientClosed)
         }
     }
 }
