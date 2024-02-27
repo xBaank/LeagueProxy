@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 
 @Composable
 fun AlertDialog(
@@ -26,6 +29,7 @@ fun AlertDialog(
             },
             confirmButton = {
                 TextButton(
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                     onClick = {
                         onConfirmation()
                     }
@@ -35,6 +39,7 @@ fun AlertDialog(
             },
             dismissButton = {
                 TextButton(
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                     onClick = {
                         onDismissRequest()
                     }
