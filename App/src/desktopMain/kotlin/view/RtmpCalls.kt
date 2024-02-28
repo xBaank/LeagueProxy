@@ -9,11 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Card
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ListItem
-import androidx.compose.material.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
@@ -27,7 +26,6 @@ import proxies.interceptors.RtmpCall
 import rtmp.amf0.*
 
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun RtmpCalls() {
     val items: SnapshotStateList<RtmpCall> = remember { mutableStateListOf() }
@@ -39,7 +37,7 @@ fun RtmpCalls() {
 
     LazyColumn {
         items(items) { item ->
-            ListItem { RenderRtmpCall(item) }
+            ListItem(headlineContent = { RenderRtmpCall(item) })
         }
     }
 }
@@ -52,8 +50,7 @@ fun RenderRtmpCall(item: RtmpCall) {
     Card(
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth(),
-        elevation = 8.dp
+            .fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
