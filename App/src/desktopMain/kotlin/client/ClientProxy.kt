@@ -43,8 +43,7 @@ class ClientProxy(
                 systemYamlPatcher.riotClientPath,
                 "--launch-product=league_of_legends",
                 "--launch-patchline=live",
-                "--disable-patching",
-                destroyForcibly = true
+                "--disable-patching"
             )
         }
     }
