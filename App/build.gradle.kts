@@ -26,7 +26,6 @@ kotlin {
             implementation("io.ktor:ktor-network-tls:$ktor_version")
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")
-            implementation("io.exoquery:pprint-kotlin:2.0.2")
             // https://mvnrepository.com/artifact/org.yaml/snakeyaml
             implementation("org.yaml:snakeyaml:2.0")
             implementation("com.squareup.okio:okio:3.3.0")
