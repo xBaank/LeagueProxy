@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import proxies.interceptors.RTMPProxyInterceptor
 import proxies.interceptors.RtmpCall
+import proxies.utils.Amf0PrettyBuilder
 import rtmp.amf0.Amf0Node
 
 
@@ -92,7 +93,7 @@ fun RenderRtmpCall(item: RtmpCall) {
 
 @Composable
 private fun RenderAmf0Node(amf0Node: Amf0Node) {
-    TextArea(amf0Node.toString())
+    TextArea(Amf0PrettyBuilder().write(amf0Node).build())
 }
 
 fun rtmpCallPreview(item: RtmpCall) = when (item) {
