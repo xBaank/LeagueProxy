@@ -80,6 +80,10 @@ fun RenderRtmpCall(item: RtmpCall) {
     }
 }
 
+val padding = 8.dp
+
+//TODO change this to simple text but with a bit of pretty formatting, that will simplify its viewing when trying too see JSON or XML
+
 @Composable
 private fun RenderAmf0Node(amf0Node: Amf0Node) {
     Row {
@@ -101,7 +105,7 @@ private fun RenderAmf0Node(amf0Node: Amf0Node) {
             )
 
             is Amf0Object -> {
-                Column(modifier = Modifier.padding(start = 8.dp)) {
+                Column(modifier = Modifier.padding(start = padding)) {
                     for ((key, value) in amf0Node.value) {
                         Row {
                             Text(text = "$key:", style = MaterialTheme.typography.bodyMedium)
@@ -112,10 +116,25 @@ private fun RenderAmf0Node(amf0Node: Amf0Node) {
             }
 
             is Amf0TypedObject -> {
-                Row {
-                    Text(text = "${amf0Node.name}:", style = MaterialTheme.typography.bodyMedium)
-                    Column(modifier = Modifier.padding(start = 8.dp)) {
-                        for ((key, value) in amf0Node.value) {
+                Column(modifier = Modifier.padding(start = padding)) {
+                    Row {
+                        Text(text = "${amf0Node.name}:", style = MaterialTheme.typography.bodyMedium)
+                        Column(modifier = Modifier.padding(start = padding)) {
+                            for ((key, value) in amf0Node.value) {
+                                Row {
+                                    Text(text = "$key:", style = MaterialTheme.typography.bodyMedium)
+                                    RenderAmf0Node(value)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            is Amf0ECMAArray -> {
+                Column(modifier = Modifier.padding(start = padding)) {
+                    for ((key, value) in amf0Node.value) {
+                        Column(modifier = Modifier.padding(start = padding)) {
                             Row {
                                 Text(text = "$key:", style = MaterialTheme.typography.bodyMedium)
                                 RenderAmf0Node(value)
@@ -125,19 +144,8 @@ private fun RenderAmf0Node(amf0Node: Amf0Node) {
                 }
             }
 
-            is Amf0ECMAArray -> {
-                Column(modifier = Modifier.padding(start = 8.dp)) {
-                    for ((key, value) in amf0Node.value) {
-                        Row {
-                            Text(text = "$key:", style = MaterialTheme.typography.bodyMedium)
-                            RenderAmf0Node(value)
-                        }
-                    }
-                }
-            }
-
             is Amf0StrictArray -> {
-                Column(modifier = Modifier.padding(start = 8.dp)) {
+                Column(modifier = Modifier.padding(start = padding)) {
                     Row {
                         for (value in amf0Node.value) {
                             RenderAmf0Node(value)

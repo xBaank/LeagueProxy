@@ -12,7 +12,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.startKoin
 import proxies.utils.isRiotClientRunning
-import proxies.utils.killRiotClient
 import proxies.utils.showError
 import view.App
 
@@ -25,11 +24,11 @@ suspend fun main() {
         LaunchedEffect(isRiotClientClosed.value) {
             if (!isRiotClientClosed.value) return@LaunchedEffect
             launch {
-                proxies(onStarted = {}, onClose = { runBlocking { killRiotClient() }; exitApplication() })
+                proxies(onStarted = {}, onClose = ::exitApplication)
             }
         }
 
-        Window(onCloseRequest = { runBlocking { killRiotClient() }; exitApplication() }, title = "TraitorsBlade") {
+        Window(onCloseRequest = ::exitApplication, title = "TraitorsBlade") {
             App(isRiotClientClosed)
         }
     }
