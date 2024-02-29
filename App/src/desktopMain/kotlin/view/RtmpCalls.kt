@@ -1,7 +1,6 @@
 package view
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -72,44 +71,47 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth()
-                .pointerHoverIcon(PointerIcon.Hand)
-                .clickable { expanded = !expanded } // Toggle expanded state on click
         ) {
-            Text(
-                text = "$index - ${rtmpCallPreview(item)}",
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp // Adjust the font size as needed
-                ),
-            )
-
-            SelectionContainer {
-
-                if (expanded) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Button(
-                            onClick = { showReadable = !showReadable },
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .pointerHoverIcon(PointerIcon.Hand)
-                        ) {
-                            if (showReadable) Text("Show structured")
-                            else Text("Show readable")
-                        }
-                    }
-                    Column {
-                        item.data.forEach {
-                            if (showReadable) RenderAmf0Node(Amf0PrettyBuilder().write(it).build())
-                            else RenderAmf0Node(it.prettyPrint())
-                        }
-                    }
-                } else {
-                    // Show summary when not expanded
-                    Text("${item.data.toString().substring(0..50)}...")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "$index - ${rtmpCallPreview(item)}",
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp // Adjust the font size as needed
+                    ),
+                )
+                Button(onClick = { expanded = !expanded }, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
+                    Text(if (!expanded) "Expand" else "Hide")
                 }
+            }
+
+            if (expanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Button(
+                        onClick = { showReadable = !showReadable },
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                    ) {
+                        Text(if (showReadable) "Show structured" else "Show readable")
+                    }
+                }
+                Column {
+                    item.data.forEach {
+                        if (showReadable) RenderAmf0Node(Amf0PrettyBuilder().write(it).build())
+                        else RenderAmf0Node(it.prettyPrint())
+                    }
+                }
+            } else {
+                // Show summary when not expanded
+                Text("${item.data.toString().substring(0..50)}...")
             }
         }
     }
@@ -117,7 +119,9 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
 
 @Composable
 private fun RenderAmf0Node(text: String) {
-    TextArea(text)
+    SelectionContainer {
+        TextArea(text)
+    }
 }
 
 fun rtmpCallPreview(item: RtmpCall) = when (item) {
