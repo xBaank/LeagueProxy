@@ -33,7 +33,7 @@ value class Amf0Object(val value: MutableMap<String, Amf0Node>) : Amf0Node {
     }
 }
 
-class Amf0TypedObject(val name: String, val value: MutableMap<String, Amf0Node>) : Amf0Node {
+data class Amf0TypedObject(val name: String, val value: MutableMap<String, Amf0Node>) : Amf0Node {
     companion object {
         const val TYPE = 0x10
     }
@@ -68,13 +68,13 @@ value class Amf0StrictArray(val value: MutableList<Amf0Node>) : Amf0Node {
     }
 }
 
-class Amf0Date(val value: Double, val timezone: Short) : Amf0Node {
+data class Amf0Date(val value: Double, val timezone: Short) : Amf0Node {
     companion object {
         const val TYPE = 0x0B
     }
 }
 
-class Amf0Amf3(val nodes: List<Amf3Node>) : Amf0Node {
+data class Amf0Amf3(val nodes: List<Amf3Node>) : Amf0Node {
     companion object {
         const val TYPE = 0x11
     }

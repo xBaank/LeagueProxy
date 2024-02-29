@@ -17,5 +17,5 @@ suspend fun isRiotClientRunning(): Boolean {
 }
 
 suspend fun killRiotClient() {
-    process("WMIC", "PROCESS", "WHERE", "name='RiotClientServices.exe'", "DELETE")
+    process("taskkill", "/IM", "RiotClientServices.exe")
 }

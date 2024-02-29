@@ -6,6 +6,7 @@ import androidx.compose.ui.window.awaitApplication
 import client.ClientProxy
 import client.SystemYamlPatcher
 import exceptions.LeagueNotFoundException
+import extensions.inject
 import io.ktor.utils.io.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -35,7 +36,8 @@ suspend fun main() {
 }
 
 private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = coroutineScope {
-    val clientProxy = ClientProxy(SystemYamlPatcher(), onClientClose = onClose)
+    val patcher by inject<SystemYamlPatcher>()
+    val clientProxy = ClientProxy(patcher, onClientClose = onClose)
     clientProxy.use {
         launch { clientProxy.startProxies() }
         runCatching {

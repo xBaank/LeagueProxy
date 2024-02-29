@@ -1,6 +1,7 @@
 package proxies.utils
 
 import rtmp.amf0.*
+import rtmp.amf3.*
 
 
 class Amf0PrettyBuilder(private var indentLevel: Int = 0) {
@@ -27,8 +28,73 @@ class Amf0PrettyBuilder(private var indentLevel: Int = 0) {
         return this
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    fun write(node: Amf3Node) {
+        when (node) {
+            is Amf3Array -> renderAmf3Array(node)
+            is Amf3ByteArray -> builder.append(node.value.toHexString())
+            is Amf3Date -> renderAmf0Date(Amf0Date(node.value, 0))
+            Amf3Dictionary -> TODO()
+            is Amf3Double -> renderAmf0Number(Amf0Number(node.value))
+            Amf3False -> builder.append(false)
+            is Amf3Integer -> renderAmf0Number(Amf0Number(node.value.toDouble()))
+            Amf3Null -> builder.append(null.toString())
+            is Amf3Object -> renderAmf3Object(node)
+            is Amf3String -> renderAmf0String(Amf0String(node.value))
+            Amf3True -> builder.append(true)
+            Amf3Undefined -> builder.append("undefined")
+            is Amf3VectorDouble -> TODO()
+            is Amf3VectorInt -> TODO()
+            is Amf3VectorObject -> TODO()
+            is Amf3VectorUint -> TODO()
+            is Amf3XMLDocument -> TODO()
+        }
+    }
+
+    fun renderAmf3Object(node: Amf3Object) {
+        builder.append("{")
+        if (node.value.isNotEmpty()) {
+            builder.appendLine()
+            indentLevel++
+            node.value.entries.forEachIndexed { index, (key, value) ->
+                if (index != 0) {
+                    builder.append(",")
+                    builder.appendLine()
+                }
+                writeIndent()
+                builder.append(key)
+                builder.append(": ")
+                write(value)
+            }
+            builder.appendLine()
+            indentLevel--
+            writeIndent()
+        }
+        builder.append("}")
+    }
+
+    fun renderAmf3Array(node: Amf3Array) {
+        builder.append("[")
+        if (node.value.isNotEmpty()) {
+            builder.appendLine()
+            indentLevel++
+            node.value.forEachIndexed { index, node ->
+                if (index != 0) {
+                    builder.append(",")
+                    builder.appendLine()
+                }
+                writeIndent()
+                write(node)
+            }
+            builder.appendLine()
+            indentLevel--
+            writeIndent()
+        }
+        builder.append("]")
+    }
+
     fun renderAmf0Amf3(node: Amf0Amf3) {
-        builder.append(node.nodes.toString())
+        renderAmf3Array(Amf3Array(node.nodes.toMutableList()))
     }
 
     fun renderAmf0Boolean(node: Amf0Boolean) {

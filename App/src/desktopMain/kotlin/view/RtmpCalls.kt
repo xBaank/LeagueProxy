@@ -4,11 +4,11 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -16,12 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import extensions.prettyPrint
 import org.koin.compose.koinInject
 import proxies.interceptors.RTMPProxyInterceptor
 import proxies.interceptors.RtmpCall
 import proxies.utils.Amf0PrettyBuilder
-import rtmp.amf0.Amf0Node
 
 
 @Composable
@@ -48,16 +51,17 @@ fun RtmpCalls() {
     }
 
     LazyColumn {
-        items(items) { item ->
-            ListItem(headlineContent = { RenderRtmpCall(item) })
+        itemsIndexed(items) { index, item ->
+            ListItem(headlineContent = { RenderRtmpCall(item, index) })
         }
     }
 }
 
 @Preview
 @Composable
-fun RenderRtmpCall(item: RtmpCall) {
+fun RenderRtmpCall(item: RtmpCall, index: Int) {
     var expanded by remember { mutableStateOf(false) }
+    var showReadable by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -72,31 +76,51 @@ fun RenderRtmpCall(item: RtmpCall) {
                 .clickable { expanded = !expanded } // Toggle expanded state on click
         ) {
             Text(
-                text = rtmpCallPreview(item),
-                style = MaterialTheme.typography.bodyMedium,
+                text = "$index - ${rtmpCallPreview(item)}",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp // Adjust the font size as needed
+                ),
             )
-            if (expanded) {
-                SelectionContainer {
-                    Column {
-                        item.data.forEach { RenderAmf0Node(it) }
+
+            SelectionContainer {
+
+                if (expanded) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Button(
+                            onClick = { showReadable = !showReadable },
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .pointerHoverIcon(PointerIcon.Hand)
+                        ) {
+                            if (showReadable) Text("Show structured")
+                            else Text("Show readable")
+                        }
                     }
+                    Column {
+                        item.data.forEach {
+                            if (showReadable) RenderAmf0Node(Amf0PrettyBuilder().write(it).build())
+                            else RenderAmf0Node(it.prettyPrint())
+                        }
+                    }
+                } else {
+                    // Show summary when not expanded
+                    Text("${item.data.toString().substring(0..50)}...")
                 }
-            } else {
-                // Show summary when not expanded
-                Text("${item.data.toString().substring(0..50)}...")
             }
         }
     }
 }
 
-//TODO change this to simple text but with a bit of pretty formatting, that will simplify its viewing when trying too see JSON or XML
-
 @Composable
-private fun RenderAmf0Node(amf0Node: Amf0Node) {
-    TextArea(Amf0PrettyBuilder().write(amf0Node).build())
+private fun RenderAmf0Node(text: String) {
+    TextArea(text)
 }
 
 fun rtmpCallPreview(item: RtmpCall) = when (item) {
-    is RtmpCall.RtmpRequest -> "Request"
-    is RtmpCall.RtmpResponse -> "Response"
+    is RtmpCall.RtmpRequest -> "REQUEST"
+    is RtmpCall.RtmpResponse -> "RESPONSE"
 }
