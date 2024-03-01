@@ -76,7 +76,7 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - ${rtmpCallPreview(item)}",
+                    text = "$index - RTMP ${rtmpCallPreview(item)}",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed

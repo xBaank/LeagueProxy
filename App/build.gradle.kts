@@ -22,8 +22,10 @@ kotlin {
             implementation(compose.material3)
             implementation("io.ktor:ktor-network:$ktor_version")
             implementation("io.ktor:ktor-network-tls:$ktor_version")
+            implementation("io.ktor:ktor-server-netty:$ktor_version")
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")
+            implementation("ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0")
             // https://mvnrepository.com/artifact/org.yaml/snakeyaml
             implementation("org.yaml:snakeyaml:2.0")
             implementation("com.squareup.okio:okio:3.3.0")

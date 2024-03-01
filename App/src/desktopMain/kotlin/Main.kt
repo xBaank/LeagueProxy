@@ -3,7 +3,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.awaitApplication
-import client.ClientProxy
+import client.CreateClientProxy
 import client.SystemYamlPatcher
 import exceptions.LeagueNotFoundException
 import extensions.inject
@@ -37,7 +37,7 @@ suspend fun main() {
 
 private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = coroutineScope {
     val patcher by inject<SystemYamlPatcher>()
-    val clientProxy = ClientProxy(patcher, onClientClose = onClose)
+    val clientProxy = CreateClientProxy(patcher, onClientClose = onClose)
     clientProxy.use {
         launch { clientProxy.startProxies() }
         runCatching {

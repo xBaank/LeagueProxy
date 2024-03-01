@@ -17,11 +17,11 @@ import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
 
 
-fun RtmpProxy(host: String, port: Int, proxieEventHandler: IProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
+fun RtmpProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
-    return RtmpProxy(socketServer, host, port, proxieEventHandler)
+    return RtmpProxy(socketServer, host, port, proxyEventHandler)
 }
 
 class RtmpProxy internal constructor(
