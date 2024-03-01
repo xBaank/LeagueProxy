@@ -1,5 +1,6 @@
 package proxies
 
+import arrow.core.getOrElse
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -12,11 +13,34 @@ import okhttp3.Request
 import ru.gildor.coroutines.okhttp.await
 import simpleJson.deserialized
 import simpleJson.serialized
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.X509TrustManager
 
 private const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
 class ClientConfigProxy {
-    private val client = OkHttpClient.Builder().build()
+    private val trustAllCerts = object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun getAcceptedIssuers(): Array<X509Certificate> {
+            return arrayOf()
+        }
+    }
+
+    private fun trustAllSsl(): SSLSocketFactory {
+        val sslContext = SSLContext.getInstance("SSL")
+        sslContext.init(null, arrayOf(trustAllCerts), SecureRandom())
+        return sslContext.socketFactory
+    }
+
+    private val httpClient = OkHttpClient.Builder()
+        .sslSocketFactory(trustAllSsl(), trustAllCerts)
+        .hostnameVerifier { _, _ -> true }
+        .build()
+
     var port: Int? = null
 
     fun start() {
@@ -24,32 +48,29 @@ class ClientConfigProxy {
             routing {
                 get("{...}") {
                     val url = "$configUrl${call.request.uri}"
-                    val headers = call.request.headers.entries()
-                    val contentType = call.request.contentType()
+                    val userAgent = call.request.userAgent()
+                    val auth = call.request.headers["Authorization"]
+                    val jwt = call.request.headers["X-Riot-Entitlements-JWT"]
 
-                    val response = client.newCall(
+                    val response = httpClient.newCall(
                         Request.Builder().url(url)
-                            .apply {
-                                headers.forEach {
-                                    val value = it.value.firstOrNull() ?: return@forEach
-                                    header(it.key, value)
-                                }
-                            }
+                            .apply { if (userAgent != null) header("User-Agent", userAgent) }
+                            .apply { if (auth != null) header("Authorization", auth) }
+                            .apply { if (jwt != null) header("X-Riot-Entitlements-JWT", jwt) }
                             .build()
                     ).await()
 
-                    val responseString = response.use { it.body!!.string() }
-                    val json = responseString.deserialized().getOrNull()
+                    val responseBytes = response.use { it.body!!.string() }
+                    val json = responseBytes.deserialized().getOrElse { throw it }
 
                     call.respondText(
-                        json?.serialized() ?: "",
-                        contentType,
+                        json.serialized(),
+                        ContentType.Application.Json,
                         HttpStatusCode.fromValue(response.code)
                     )
                 }
             }
         }.start(wait = false)
-
         port = server.environment.connectors.first().port
     }
 }

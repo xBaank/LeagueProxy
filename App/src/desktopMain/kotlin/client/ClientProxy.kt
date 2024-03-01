@@ -45,10 +45,8 @@ class ClientProxy internal constructor(
             launch { proxyClient.start() }
         }
 
-        launch {
-            clientConfigProxy.start()
-            println("Started clientConfigProxy on port ${clientConfigProxy.port}")
-        }
+        clientConfigProxy.start()
+        println("Started clientConfigProxy on port ${clientConfigProxy.port}")
     }
 
     suspend fun startClient(): Unit = coroutineScope {
@@ -58,7 +56,7 @@ class ClientProxy internal constructor(
                 "--launch-product=league_of_legends",
                 "--launch-patchline=live",
                 "--client-config-url=\"http://127.0.0.1:${clientConfigProxy.port}\"",
-                "--allow-multiple-clients"
+                "--disable-patching"
             )
         }
     }
