@@ -10,8 +10,8 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import proxies.interceptors.Call.RtmpCall
 import proxies.interceptors.IProxyInterceptor
-import proxies.interceptors.RtmpCall
 import rtmp.Amf0MessagesHandler
 import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket

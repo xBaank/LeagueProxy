@@ -20,19 +20,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
 import org.koin.compose.koinInject
+import proxies.interceptors.Call
+import proxies.interceptors.Call.ConfigCall
+import proxies.interceptors.Call.RtmpCall
+import proxies.interceptors.ConfigProxyInterceptor
 import proxies.interceptors.RTMPProxyInterceptor
-import proxies.interceptors.RtmpCall
 import proxies.utils.Amf0PrettyBuilder
+import simpleJson.serializedPretty
 
 
 @Composable
 fun RtmpCalls() {
-    val items: SnapshotStateList<RtmpCall> = remember { mutableStateListOf() }
-    val myService = koinInject<RTMPProxyInterceptor>()
+    val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
+    val rtmpInterceptor = koinInject<RTMPProxyInterceptor>()
+    val configInterceptor = koinInject<ConfigProxyInterceptor>()
 
     LaunchedEffect(Unit) {
-        myService.calls.collect(items::add)
+        rtmpInterceptor.calls.collect(items::add)
     }
+
+    LaunchedEffect(Unit) {
+        configInterceptor.calls.collect(items::add)
+    }
+
 
     if (items.isEmpty()) {
         Box(
@@ -50,7 +60,10 @@ fun RtmpCalls() {
 
     LazyColumn {
         itemsIndexed(items) { index, item ->
-            ListItem(headlineContent = { RenderRtmpCall(item, index) })
+            when (item) {
+                is ConfigCall.ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
+                is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
+            }
         }
     }
 }
@@ -103,8 +116,8 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
                 }
                 Column {
                     item.data.forEach {
-                        if (showReadable) RenderAmf0Node(Amf0PrettyBuilder().write(it).build())
-                        else RenderAmf0Node(it.prettyPrint())
+                        if (showReadable) RenderSelectableText(Amf0PrettyBuilder().write(it).build())
+                        else RenderSelectableText(it.prettyPrint())
                     }
                 }
             } else {
@@ -116,7 +129,47 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
 }
 
 @Composable
-private fun RenderAmf0Node(text: String) {
+fun RenderConfigCall(item: ConfigCall, index: Int) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "$index - Config response",
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp // Adjust the font size as needed
+                    ),
+                )
+                Button(onClick = { expanded = !expanded }, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
+                    Text(if (!expanded) "Expand" else "Hide")
+                }
+            }
+
+            if (expanded) {
+                Column {
+                    RenderSelectableText(item.data.serializedPretty())
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RenderSelectableText(text: String) {
     SelectionContainer {
         TextArea(text)
     }

@@ -1,8 +1,9 @@
 package proxies.interceptors
 
 import kotlinx.coroutines.flow.MutableSharedFlow
-import proxies.interceptors.RtmpCall.RtmpRequest
-import proxies.interceptors.RtmpCall.RtmpResponse
+import proxies.interceptors.Call.RtmpCall
+import proxies.interceptors.Call.RtmpCall.RtmpRequest
+import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.utils.base64Ungzip
 import proxies.utils.gzipBase64
 import rtmp.amf0.*
