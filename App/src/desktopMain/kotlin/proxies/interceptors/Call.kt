@@ -1,13 +1,20 @@
 package proxies.interceptors
 
+import okhttp3.Headers
 import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 
 sealed interface Call {
     sealed interface ConfigCall : Call {
         val data: JsonNode
+        val url: String
+        val headers: Headers
 
-        data class ConfigResponse(override val data: JsonNode) : ConfigCall
+        data class ConfigResponse(
+            override val data: JsonNode,
+            override val url: String,
+            override val headers: Headers,
+        ) : ConfigCall
     }
 
     sealed interface RtmpCall : Call {

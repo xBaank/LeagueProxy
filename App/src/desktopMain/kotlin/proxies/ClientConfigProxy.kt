@@ -11,6 +11,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import proxies.interceptors.Call.ConfigCall.ConfigResponse
 import proxies.interceptors.ConfigProxyInterceptor
 import ru.gildor.coroutines.okhttp.await
 import simpleJson.deserialized
@@ -67,7 +68,7 @@ class ClientConfigProxy {
                     val responseBytes = response.use { it.body!!.string() }
                     val json = responseBytes.deserialized().getOrElse { throw it }
 
-                    configProxyInterceptor.onResponse(json)
+                    configProxyInterceptor.onResponse(ConfigResponse(json, url, response.headers))
 
                     call.respondText(
                         json.serialized(),
@@ -77,6 +78,7 @@ class ClientConfigProxy {
                 }
             }
         }.start(wait = false)
+
         port = server.environment.connectors.first().port
     }
 }

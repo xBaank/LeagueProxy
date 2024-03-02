@@ -23,7 +23,7 @@ fun TextArea(text: String) {
         Text(
             text = text,
             modifier = Modifier
-                .padding(4.dp)
+                .padding(8.dp)
         )
     }
 }

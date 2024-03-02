@@ -2,19 +2,16 @@ package proxies.interceptors
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import proxies.interceptors.Call.ConfigCall
-import proxies.interceptors.Call.ConfigCall.ConfigResponse
-import simpleJson.JsonNode
 
-class ConfigProxyInterceptor : IProxyInterceptor<JsonNode, ConfigCall> {
+class ConfigProxyInterceptor : IProxyInterceptor<ConfigCall, ConfigCall> {
     val calls: MutableSharedFlow<ConfigCall> = MutableSharedFlow()
 
-    override suspend fun onRequest(value: JsonNode): ConfigCall {
+    override suspend fun onRequest(value: ConfigCall): ConfigCall {
         TODO("Not yet implemented")
     }
 
-    override suspend fun onResponse(value: JsonNode): ConfigCall {
-        val configResponse = ConfigResponse(value)
-        calls.emit(configResponse)
-        return configResponse
+    override suspend fun onResponse(value: ConfigCall): ConfigCall {
+        calls.emit(value)
+        return value
     }
 }

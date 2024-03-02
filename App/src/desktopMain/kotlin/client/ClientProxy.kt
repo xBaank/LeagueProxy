@@ -45,7 +45,6 @@ class ClientProxy internal constructor(
             launch { proxyClient.start() }
         }
 
-        clientConfigProxy.start()
         println("Started clientConfigProxy on port ${clientConfigProxy.port}")
     }
 

@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -26,11 +23,13 @@ import proxies.interceptors.Call.RtmpCall
 import proxies.interceptors.ConfigProxyInterceptor
 import proxies.interceptors.RTMPProxyInterceptor
 import proxies.utils.Amf0PrettyBuilder
+import simpleJson.serialized
 import simpleJson.serializedPretty
 
 
 @Composable
 fun RtmpCalls() {
+    var searchText by remember { mutableStateOf("") }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
     val rtmpInterceptor = koinInject<RTMPProxyInterceptor>()
     val configInterceptor = koinInject<ConfigProxyInterceptor>()
@@ -58,11 +57,21 @@ fun RtmpCalls() {
         return
     }
 
-    LazyColumn {
-        itemsIndexed(items) { index, item ->
-            when (item) {
-                is ConfigCall.ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
-                is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
+    Column {
+        TextField(
+            value = searchText,
+            onValueChange = { searchText = it },
+            label = { Text("Search") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+        LazyColumn {
+            itemsIndexed(items.filterByText(searchText)) { index, item ->
+                when (item) {
+                    is ConfigCall.ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
+                    is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
+                }
             }
         }
     }
@@ -148,7 +157,7 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - Config response",
+                    text = "$index - CONFIG RESPONSE",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
@@ -159,8 +168,13 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
                 }
             }
 
+            SelectionContainer {
+                Text(text = item.url, modifier = Modifier.padding(8.dp))
+            }
+
             if (expanded) {
                 Column {
+                    RenderSelectableText(item.headers.toMap().prettyPrint())
                     RenderSelectableText(item.data.serializedPretty())
                 }
             }
@@ -178,4 +192,13 @@ private fun RenderSelectableText(text: String) {
 fun rtmpCallPreview(item: RtmpCall) = when (item) {
     is RtmpCall.RtmpRequest -> "REQUEST"
     is RtmpCall.RtmpResponse -> "RESPONSE"
+}
+
+fun SnapshotStateList<Call>.filterByText(text: String) = filter {
+    if (text.trim().isBlank()) return@filter true
+    when (it) {
+        is ConfigCall.ConfigResponse -> it.data.serialized().contains(text, true)
+        is RtmpCall.RtmpRequest -> it.data.prettyPrint().contains(text, true)
+        is RtmpCall.RtmpResponse -> it.data.prettyPrint().contains(text, true)
+    }
 }
