@@ -9,19 +9,21 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import proxies.ClientConfigProxy
 import proxies.RtmpProxy
+import proxies.interceptors.ConfigProxyInterceptor
 import proxies.interceptors.RTMPProxyInterceptor
 
 fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () -> Unit): ClientProxy {
-    val interceptor by inject<RTMPProxyInterceptor>()
+    val rtmpProxyInterceptor by inject<RTMPProxyInterceptor>()
+    val configProxyInterceptor by inject<ConfigProxyInterceptor>()
 
     val proxies = systemYamlPatcher.lcdsHosts.map { (region, lcds) ->
-        val proxyClient = RtmpProxy(lcds.host, lcds.port, interceptor)
+        val proxyClient = RtmpProxy(lcds.host, lcds.port, rtmpProxyInterceptor)
         val port = proxyClient.serverSocket.localAddress.port
         println("Created rtmp proxy for $region on port $port")
         region to proxyClient
     }
 
-    val clientConfigProxy = ClientConfigProxy()
+    val clientConfigProxy = ClientConfigProxy(configProxyInterceptor)
 
     val lcdsHosts = proxies.associate { (region, proxyClient) ->
         region to LcdsHost("127.0.0.1", proxyClient.serverSocket.localAddress.port)

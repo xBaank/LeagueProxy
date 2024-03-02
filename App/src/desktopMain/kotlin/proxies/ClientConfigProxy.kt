@@ -1,7 +1,6 @@
 package proxies
 
 import arrow.core.getOrElse
-import extensions.inject
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -24,8 +23,9 @@ import javax.net.ssl.X509TrustManager
 
 private const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
-class ClientConfigProxy {
-    val configProxyInterceptor by inject<ConfigProxyInterceptor>()
+class ClientConfigProxy(
+    private val configProxyInterceptor: ConfigProxyInterceptor,
+) {
 
     private val trustAllCerts = object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
