@@ -8,6 +8,7 @@ import client.SystemYamlPatcher
 import exceptions.LeagueNotFoundException
 import extensions.inject
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -39,9 +40,9 @@ private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = corout
     val patcher by inject<SystemYamlPatcher>()
     val clientProxy = CreateClientProxy(patcher, onClientClose = onClose)
     clientProxy.use {
-        launch { clientProxy.startProxies() }
+        launch(Dispatchers.IO) { clientProxy.startProxies() }
         runCatching {
-            val job = launch { clientProxy.startClient() }
+            val job = launch(Dispatchers.IO) { clientProxy.startClient() }
             onStarted()
             job.join()
         }.onFailure {

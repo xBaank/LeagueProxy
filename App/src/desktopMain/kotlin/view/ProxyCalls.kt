@@ -28,7 +28,7 @@ import simpleJson.serializedPretty
 
 
 @Composable
-fun RtmpCalls() {
+fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
     var searchText by remember { mutableStateOf("") }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
     val rtmpInterceptor = koinInject<RTMPProxyInterceptor>()
@@ -58,14 +58,26 @@ fun RtmpCalls() {
     }
 
     Column {
-        TextField(
-            value = searchText,
-            onValueChange = { searchText = it },
-            label = { Text("Search") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            TextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                label = { Text("Search") },
+                modifier = Modifier
+                    .fillMaxWidth(0.9F)
+                    .padding(16.dp)
+            )
+
+            Switch(
+                checked = isDarkColors.value,
+                onCheckedChange = { isDarkColors.value = it },
+                modifier = Modifier.padding(16.dp)
+            )
+        }
         LazyColumn {
             itemsIndexed(items.filterByText(searchText)) { index, item ->
                 when (item) {

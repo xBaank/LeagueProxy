@@ -25,7 +25,7 @@ private const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
 class ClientConfigProxy(
     private val configProxyInterceptor: ConfigProxyInterceptor,
-) {
+) : AutoCloseable {
 
     private val trustAllCerts = object : X509TrustManager {
         override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
@@ -47,6 +47,7 @@ class ClientConfigProxy(
         .build()
 
     var port: Int? = null
+    private var server: NettyApplicationEngine? = null
 
     fun start() {
         val server = embeddedServer(Netty) {
@@ -79,6 +80,12 @@ class ClientConfigProxy(
             }
         }.start(wait = false)
 
+        this.server = server
+
         port = server.environment.connectors.first().port
+    }
+
+    override fun close() {
+        server?.stop(500, 500)
     }
 }

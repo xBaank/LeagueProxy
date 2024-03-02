@@ -3,9 +3,7 @@ package client
 import com.github.pgreze.process.process
 import extensions.inject
 import extensions.port
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
 import proxies.ClientConfigProxy
 import proxies.RtmpProxy
@@ -41,6 +39,8 @@ class ClientProxy internal constructor(
     val onClientClose: () -> Unit,
 ) : KoinComponent, AutoCloseable {
 
+    private val configServerStarted: CompletableJob = Job()
+
     suspend fun startProxies() = coroutineScope {
         rtmpProxies.onEach { (region, proxyClient) ->
             println("Started rtmp proxy for $region on port ${proxyClient.serverSocket.localAddress.port}")
@@ -48,10 +48,12 @@ class ClientProxy internal constructor(
         }
 
         clientConfigProxy.start()
+        configServerStarted.complete()
         println("Started clientConfigProxy on port ${clientConfigProxy.port}")
     }
 
     suspend fun startClient(): Unit = coroutineScope {
+        configServerStarted.join()
         launch(Dispatchers.IO) {
             process(
                 systemYamlPatcher.riotClientPath,
@@ -64,6 +66,7 @@ class ClientProxy internal constructor(
     }
 
     override fun close() {
+        clientConfigProxy.close()
         systemYamlPatcher.close()
         onClientClose()
     }

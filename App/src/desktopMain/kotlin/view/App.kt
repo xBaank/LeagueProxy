@@ -5,15 +5,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
 import kotlinx.coroutines.runBlocking
 import proxies.utils.killRiotClient
 import view.theme.DarkColors
+import view.theme.LightColors
 
 @Composable
 fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
-    MaterialTheme(colorScheme = DarkColors) {
+    val isDarkColor = remember { mutableStateOf(true) }
+
+    MaterialTheme(colorScheme = if (isDarkColor.value) DarkColors else LightColors) {
         Surface(
             color = MaterialTheme.colorScheme.background,
             modifier = Modifier.fillMaxSize()
@@ -30,7 +35,9 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
                 )
                 return@Surface
             }
-            RtmpCalls()
+
+
+            ProxyCalls(isDarkColor)
         }
     }
 }
