@@ -28,12 +28,12 @@ class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     val host: String,
     val port: Int,
-    private val interceptor: IProxyInterceptor<List<Amf0Node>, RtmpCall>
+    private val interceptor: IProxyInterceptor<List<Amf0Node>, RtmpCall>,
 ) {
     suspend fun start() = coroutineScope {
         while (isActive) {
             val socket = serverSocket.accept()
-            println("Accepted connection from ${socket.remoteAddress} in ${socket.localAddress}")
+            println("Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}")
             launch(Dispatchers.IO) { handle(socket) }
         }
     }
@@ -90,7 +90,7 @@ class RtmpProxy internal constructor(
         serverReadChannel: ByteReadChannel,
         clientWriteChannel: ByteWriteChannel,
         clientReadChannel: ByteReadChannel,
-        serverWriteChannel: ByteWriteChannel
+        serverWriteChannel: ByteWriteChannel,
     ) {
         //TODO Could we use the same handshake for all connections so we don't allocate 1536 bytes for each connection?
         val c0 = serverReadChannel.readByte()

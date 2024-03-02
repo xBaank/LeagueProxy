@@ -1,6 +1,7 @@
 package proxies
 
 import arrow.core.getOrElse
+import extensions.port
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -13,8 +14,7 @@ import okhttp3.Request
 import proxies.interceptors.Call.ConfigCall.ConfigResponse
 import proxies.interceptors.ConfigProxyInterceptor
 import ru.gildor.coroutines.okhttp.await
-import simpleJson.deserialized
-import simpleJson.serialized
+import simpleJson.*
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -25,6 +25,7 @@ private const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
 class ClientConfigProxy(
     private val configProxyInterceptor: ConfigProxyInterceptor,
+    private val xmppProxies: Map<String, XmppProxy>,
 ) : AutoCloseable {
 
     private val trustAllCerts = object : X509TrustManager {
@@ -68,6 +69,25 @@ class ClientConfigProxy(
 
                     val responseBytes = response.use { it.body!!.string() }
                     val json = responseBytes.deserialized().getOrElse { throw it }
+
+                    if (json["chat.host"].isRight()) {
+                        val chatHost = json["chat.host"].asString().getOrElse { throw it }
+                        val xmppHost = xmppProxies.values.first { it.host == chatHost }
+                        json["chat.host"] = "127.0.0.1"
+
+                        if (json["chat.port"].isRight()) {
+                            json["chat.port"] = xmppHost.serverSocket.localAddress.port
+                        }
+
+
+                        if (json["chat.use_tls.enabled"].isRight()) {
+                            json["chat.use_tls.enabled"] = false
+                        }
+
+                        json["chat.affinities"].asObject().getOrNull()?.forEach { key, _ ->
+                            json["chat.affinities"][key] = "127.0.0.1"
+                        }
+                    }
 
                     configProxyInterceptor.onResponse(ConfigResponse(json, url, response.headers))
 

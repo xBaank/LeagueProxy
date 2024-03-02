@@ -21,7 +21,8 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
     val lolPath: String
     val systemYamlPath: Path
     val systemYamlContent: Map<String, Any>
-    val lcdsHosts: Map<String, LcdsHost>
+    val rtmpHostsByRegion: Map<String, Host>
+    val xmppHostsByRegion: Map<String, Host>
     private val systemYamlContentCopy: Map<String, Any>
 
     init {
@@ -29,8 +30,8 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
         this.lolPath = lolPath
         this.riotClientPath = riotClientPath
 
-        val hosts = getHosts()
-        this.lcdsHosts = hosts
+        this.rtmpHostsByRegion = getRtmpHosts()
+        this.xmppHostsByRegion = getXmppHosts()
 
         val (systemYamlPath, systemYamlContent) = getSystemYaml(lolPath)
         val (_, systemYamlContentCopy) = getSystemYaml(lolPath)
@@ -64,7 +65,7 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
     }
 
     private fun getSystemYaml(
-        lolPath: String
+        lolPath: String,
     ): Pair<Path, Map<String, Any>> {
         val systemYamlPath = lolPath.toPath(true).resolve("system.yaml")
         val systemYaml = FileSystem.SYSTEM.source(systemYamlPath).buffer().use { it.readUtf8() }
@@ -74,7 +75,7 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
     }
 
     fun patchSystemYaml(
-        hosts: Map<String, LcdsHost>,
+        hosts: Map<String, Host>,
     ) {
         systemYamlContent.getMap("region_data").forEach {
             val region = it.key
@@ -88,19 +89,36 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
         FileSystem.SYSTEM.sink(systemYamlPath).buffer().use { it.writeUtf8(yaml.dump(systemYamlContent)) }
     }
 
-    private fun getHosts(): Map<String, LcdsHost> {
+    private fun getRtmpHosts(): Map<String, Host> {
         val systemYamlPath = lolPath.toPath(true).resolve("system.yaml")
         val systemYaml = FileSystem.SYSTEM.source(systemYamlPath)
             .buffer()
 
         val systemYamlMap = systemYaml.use { yaml.load<Map<String, Any>>(systemYaml.readUtf8()) }
-        val hosts = mutableMapOf<String, LcdsHost>()
+        val hosts = mutableMapOf<String, Host>()
         systemYamlMap.getMap("region_data").forEach {
             val region = it.key
             val lcds = it.value.getMap("servers").getMap("lcds") as MutableMap<String, Any?>
             val host = lcds["lcds_host"] as String
             val port = lcds["lcds_port"] as Int
-            hosts[region] = LcdsHost(host, port)
+            hosts[region] = Host(host, port)
+        }
+        return hosts
+    }
+
+    private fun getXmppHosts(): Map<String, Host> {
+        val systemYamlPath = lolPath.toPath(true).resolve("system.yaml")
+        val systemYaml = FileSystem.SYSTEM.source(systemYamlPath)
+            .buffer()
+
+        val systemYamlMap = systemYaml.use { yaml.load<Map<String, Any>>(systemYaml.readUtf8()) }
+        val hosts = mutableMapOf<String, Host>()
+        systemYamlMap.getMap("region_data").forEach {
+            val region = it.key
+            val chat = it.value.getMap("servers").getMap("chat") as MutableMap<String, Any?>
+            val host = chat["chat_host"] as String
+            val port = chat["chat_port"] as Int
+            hosts[region] = Host(host, port)
         }
         return hosts
     }

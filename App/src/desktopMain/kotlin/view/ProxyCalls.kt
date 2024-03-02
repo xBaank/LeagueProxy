@@ -18,10 +18,15 @@ import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
 import org.koin.compose.koinInject
 import proxies.interceptors.Call
-import proxies.interceptors.Call.ConfigCall
-import proxies.interceptors.Call.RtmpCall
+import proxies.interceptors.Call.*
+import proxies.interceptors.Call.ConfigCall.ConfigResponse
+import proxies.interceptors.Call.RtmpCall.RtmpRequest
+import proxies.interceptors.Call.RtmpCall.RtmpResponse
+import proxies.interceptors.Call.XmppCall.XmppRequest
+import proxies.interceptors.Call.XmppCall.XmppResponse
 import proxies.interceptors.ConfigProxyInterceptor
-import proxies.interceptors.RTMPProxyInterceptor
+import proxies.interceptors.RtmpProxyInterceptor
+import proxies.interceptors.XmppProxyInterceptor
 import proxies.utils.Amf0PrettyBuilder
 import simpleJson.serialized
 import simpleJson.serializedPretty
@@ -31,8 +36,9 @@ import simpleJson.serializedPretty
 fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
     var searchText by remember { mutableStateOf("") }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
-    val rtmpInterceptor = koinInject<RTMPProxyInterceptor>()
+    val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
     val configInterceptor = koinInject<ConfigProxyInterceptor>()
+    val xmppInterceptor = koinInject<XmppProxyInterceptor>()
 
     LaunchedEffect(Unit) {
         rtmpInterceptor.calls.collect(items::add)
@@ -40,6 +46,10 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
 
     LaunchedEffect(Unit) {
         configInterceptor.calls.collect(items::add)
+    }
+
+    LaunchedEffect(Unit) {
+        xmppInterceptor.calls.collect(items::add)
     }
 
 
@@ -81,8 +91,10 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
         LazyColumn {
             itemsIndexed(items.filterByText(searchText)) { index, item ->
                 when (item) {
-                    is ConfigCall.ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
+                    is ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
                     is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
+                    is XmppRequest -> ListItem(headlineContent = { RenderXmppCall(item, index) })
+                    is XmppResponse -> ListItem(headlineContent = { RenderXmppCall(item, index) })
                 }
             }
         }
@@ -195,6 +207,46 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
 }
 
 @Composable
+fun RenderXmppCall(item: XmppCall, index: Int) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "$index - XMPP ${xmppCallPreview(item)}",
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp // Adjust the font size as needed
+                    ),
+                )
+                Button(onClick = { expanded = !expanded }, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
+                    Text(if (!expanded) "Expand" else "Hide")
+                }
+            }
+
+            if (expanded) {
+                Column {
+                    RenderSelectableText(item.data.toString())
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun RenderSelectableText(text: String) {
     SelectionContainer {
         TextArea(text)
@@ -202,15 +254,22 @@ private fun RenderSelectableText(text: String) {
 }
 
 fun rtmpCallPreview(item: RtmpCall) = when (item) {
-    is RtmpCall.RtmpRequest -> "REQUEST"
-    is RtmpCall.RtmpResponse -> "RESPONSE"
+    is RtmpRequest -> "REQUEST"
+    is RtmpResponse -> "RESPONSE"
+}
+
+fun xmppCallPreview(item: XmppCall) = when (item) {
+    is XmppRequest -> "REQUEST"
+    is XmppResponse -> "RESPONSE"
 }
 
 fun SnapshotStateList<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is ConfigCall.ConfigResponse -> it.data.serialized().contains(text, true)
-        is RtmpCall.RtmpRequest -> it.data.prettyPrint().contains(text, true)
-        is RtmpCall.RtmpResponse -> it.data.prettyPrint().contains(text, true)
+        is ConfigResponse -> it.data.serialized().contains(text, true)
+        is RtmpRequest -> it.data.prettyPrint().contains(text, true)
+        is RtmpResponse -> it.data.prettyPrint().contains(text, true)
+        is XmppRequest -> true
+        is XmppResponse -> true //TODO
     }
 }
