@@ -67,8 +67,8 @@ class XmppProxy internal constructor(
         val clientReadChannel = clientSocket.openReadChannel()
         val clientWriteChannel = clientSocket.openWriteChannel(autoFlush = true)
 
-        //TODO Fix this
-        
+        //TODO Fix this with incremental parser lix SAX?
+
         launch(Dispatchers.IO) {
             val byteArray = ByteArray(1024 * 1024)
             val read = clientReadChannel.readAvailable(byteArray)
