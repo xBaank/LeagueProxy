@@ -6,6 +6,7 @@ import extensions.port
 import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
 import proxies.ClientConfigProxy
+import proxies.RmsProxy
 import proxies.RtmpProxy
 import proxies.XmppProxy
 import proxies.interceptors.ConfigProxyInterceptor
@@ -24,6 +25,12 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         region to proxyClient
     }
 
+    val rmsProxies = systemYamlPatcher.rmsHostsByRegion.map { host ->
+        val proxyClient = RmsProxy(host.host)
+        println("Created rms proxy for ${host.host}")
+        proxyClient
+    }.toSet()
+
     val xmppProxies = systemYamlPatcher.xmppHostsByRegion.map { (region, chat) ->
         val proxyClient = XmppProxy(chat.host, chat.port, xmppProxyInterceptor)
         val port = proxyClient.serverSocket.localAddress.port
@@ -31,7 +38,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         region to proxyClient
     }
 
-    val clientConfigProxy = ClientConfigProxy(configProxyInterceptor, xmppProxies.toMap())
+    val clientConfigProxy = ClientConfigProxy(configProxyInterceptor, xmppProxies.toMap(), rmsProxies)
 
     val lcdsHosts = rtmpProxies.associate { (region, proxyClient) ->
         region to Host("127.0.0.1", proxyClient.serverSocket.localAddress.port)
@@ -39,7 +46,14 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
 
     systemYamlPatcher.patchSystemYaml(lcdsHosts)
 
-    return ClientProxy(systemYamlPatcher, clientConfigProxy, rtmpProxies.toMap(), xmppProxies.toMap(), onClientClose)
+    return ClientProxy(
+        systemYamlPatcher = systemYamlPatcher,
+        clientConfigProxy = clientConfigProxy,
+        rtmpProxies = rtmpProxies.toMap(),
+        xmppProxies = xmppProxies.toMap(),
+        rmsProxies = rmsProxies,
+        onClientClose = onClientClose
+    )
 }
 
 class ClientProxy internal constructor(
@@ -47,6 +61,7 @@ class ClientProxy internal constructor(
     private val clientConfigProxy: ClientConfigProxy,
     private val rtmpProxies: Map<String, RtmpProxy>,
     private val xmppProxies: Map<String, XmppProxy>,
+    private val rmsProxies: Set<RmsProxy>,
     val onClientClose: () -> Unit,
 ) : KoinComponent, AutoCloseable {
 
@@ -55,6 +70,11 @@ class ClientProxy internal constructor(
     suspend fun startProxies() = coroutineScope {
         rtmpProxies.onEach { (region, proxyClient) ->
             println("Started rtmp proxy for $region on port ${proxyClient.serverSocket.localAddress.port}")
+            launch { proxyClient.start() }
+        }
+
+        rmsProxies.onEach { proxyClient ->
+            println("Started rms proxy for ${proxyClient.url} on port ${proxyClient.port}")
             launch { proxyClient.start() }
         }
 
@@ -82,6 +102,7 @@ class ClientProxy internal constructor(
     }
 
     override fun close() {
+        rmsProxies.forEach { it.close() }
         clientConfigProxy.close()
         systemYamlPatcher.close()
         onClientClose()

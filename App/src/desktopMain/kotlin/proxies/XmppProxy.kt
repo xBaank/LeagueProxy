@@ -4,11 +4,8 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.network.tls.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import proxies.interceptors.Call.XmppCall
 import proxies.interceptors.IProxyInterceptor
 import javax.xml.parsers.DocumentBuilder
@@ -67,6 +64,11 @@ class XmppProxy internal constructor(
             val byteArray = ByteArray((1024 * 1024) * 10)
             while (isActive) {
                 val read = clientReadChannel.readAvailable(byteArray)
+                if (read == -1) {
+                    socket.close()
+                    clientSocket.close()
+                    cancel("Socket closed")
+                }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
                 if (string.isNotBlank()) proxyEventHandler.onResponse(string)
                 serverWriteChannel.writeFully(byteArray, 0, read)
@@ -78,6 +80,11 @@ class XmppProxy internal constructor(
             val byteArray = ByteArray((1024 * 1024) * 10)
             while (isActive) {
                 val read = serverReadChannel.readAvailable(byteArray)
+                if (read == -1) {
+                    socket.close()
+                    clientSocket.close()
+                    cancel("Socket closed")
+                }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
                 if (string.isNotBlank()) proxyEventHandler.onRequest(string)
 

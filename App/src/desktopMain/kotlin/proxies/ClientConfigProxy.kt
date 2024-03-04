@@ -13,6 +13,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import proxies.interceptors.Call.ConfigCall.ConfigResponse
 import proxies.interceptors.ConfigProxyInterceptor
+import proxies.utils.findFreePort
 import ru.gildor.coroutines.okhttp.await
 import simpleJson.*
 import java.security.SecureRandom
@@ -21,11 +22,13 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.X509TrustManager
 
+//TODO use systemyaml url
 private const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
 class ClientConfigProxy(
     private val configProxyInterceptor: ConfigProxyInterceptor,
     private val xmppProxies: Map<String, XmppProxy>,
+    private val rmsProxies: Set<RmsProxy>,
 ) : AutoCloseable {
 
     private val trustAllCerts = object : X509TrustManager {
@@ -47,11 +50,11 @@ class ClientConfigProxy(
         .hostnameVerifier { _, _ -> true }
         .build()
 
-    var port: Int? = null
+    val port: Int = findFreePort()
     private var server: NettyApplicationEngine? = null
 
     fun start() {
-        val server = embeddedServer(Netty) {
+        val server = embeddedServer(Netty, port = port) {
             routing {
                 get("{...}") {
                     val url = "$configUrl${call.request.uri}"
@@ -69,6 +72,15 @@ class ClientConfigProxy(
 
                     val responseBytes = response.use { it.body!!.string() }
                     val json = responseBytes.deserialized().getOrElse { throw it }
+
+                    if (json["rms.affinities"].isRight()) {
+                        json["rms.affinities"].asObject().getOrNull()?.forEach { key, _ ->
+                            val value = json["rms.affinities"][key].asString().getOrNull() ?: return@forEach
+                            val proxy =
+                                rmsProxies.firstOrNull { it.url.removeSuffix(":443") == value } ?: return@forEach
+                            json["rms.affinities"][key] = "ws://127.0.0.1:${proxy.port}"
+                        }
+                    }
 
                     if (json["chat.host"].isRight()) {
                         val chatHost = json["chat.host"].asString().getOrElse { throw it }
@@ -101,8 +113,6 @@ class ClientConfigProxy(
         }.start(wait = false)
 
         this.server = server
-
-        port = server.environment.connectors.first().port
     }
 
     override fun close() {
