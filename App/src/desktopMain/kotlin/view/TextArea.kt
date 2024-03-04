@@ -21,9 +21,9 @@ fun TextArea(text: String) {
             .border(width = 1.dp, color = MaterialTheme.colorScheme.onBackground, shape = RoundedCornerShape(8.dp))
     ) {
         Text(
-            text = text,
             modifier = Modifier
-                .padding(8.dp)
+                .padding(8.dp),
+            text = text,
         )
     }
 }

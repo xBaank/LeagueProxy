@@ -1,6 +1,6 @@
 package proxies.interceptors
 
-import okhttp3.Headers
+import io.ktor.http.*
 import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 

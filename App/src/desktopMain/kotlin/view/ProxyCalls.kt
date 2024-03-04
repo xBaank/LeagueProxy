@@ -1,5 +1,7 @@
 package view
 
+import androidx.compose.foundation.ContextMenuDataProvider
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -11,6 +13,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,6 +92,7 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
                     onValueChange = { searchText = it },
                     label = { Text("Search") },
                     modifier = Modifier
+                        .padding(bottom = 10.dp)
                         .fillMaxWidth(0.9F)
                 )
 
@@ -209,7 +215,7 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.headers.toMap().prettyPrint())
+                    RenderSelectableText(item.headers.entries().prettyPrint())
                     RenderSelectableText(item.data.serializedPretty())
                 }
             }
@@ -303,8 +309,19 @@ fun RenderRmsCall(item: RmsCall, index: Int) {
 
 @Composable
 private fun RenderSelectableText(text: String) {
-    SelectionContainer {
-        TextArea(text)
+    val clipboardManager: ClipboardManager = LocalClipboardManager.current
+    ContextMenuDataProvider(
+        items = {
+            listOf(
+                ContextMenuItem("Copy all") {
+                    clipboardManager.setText(AnnotatedString((text)))
+                },
+            )
+        }
+    ) {
+        SelectionContainer {
+            TextArea(text)
+        }
     }
 }
 
