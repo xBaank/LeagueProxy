@@ -12,6 +12,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import proxies.utils.findFreePort
 import java.time.Duration
@@ -38,13 +39,16 @@ class RmsProxy(val url: String) : AutoCloseable {
                     val clientSocket = client.webSocketRawSession(
                         method = HttpMethod.Get
                     ) {
-                        url(this@RmsProxy.url + call.request.uri)
-                        headers.appendAll(reqHeaders)
+                        val url = this@RmsProxy.url + call.request.uri
+                        url(url)
                     }
-                    launch(Dispatchers.IO) {
+
+
+                    val job1 = launch(Dispatchers.IO) {
                         try {
                             for (frame in incoming) {
                                 clientSocket.send(frame)
+                                clientSocket.flush()
                             }
                         } catch (e: Throwable) {
                             clientSocket.close(e)
@@ -52,15 +56,18 @@ class RmsProxy(val url: String) : AutoCloseable {
                     }
 
                     // Launch a coroutine to read messages from the target WebSocket and send them to the client WebSocket
-                    launch(Dispatchers.IO) {
+                    val job2 = launch(Dispatchers.IO) {
                         try {
                             for (frame in clientSocket.incoming) {
                                 send(frame)
+                                flush()
                             }
                         } catch (e: Throwable) {
                             close(e)
                         }
                     }
+
+                    joinAll(job1, job2)
                 }
             }
         }.start(wait = false)
