@@ -9,20 +9,14 @@ import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.w3c.dom.Document
 import proxies.interceptors.Call.XmppCall
 import proxies.interceptors.IProxyInterceptor
-import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilder
 import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.Transformer
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
 import kotlin.coroutines.cancellation.CancellationException
 
 
-fun XmppProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<Document, XmppCall>): XmppProxy {
+fun XmppProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<String, XmppCall>): XmppProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -33,7 +27,7 @@ class XmppProxy internal constructor(
     val serverSocket: ServerSocket,
     val host: String,
     val port: Int,
-    private val proxyEventHandler: IProxyInterceptor<Document, XmppCall>,
+    private val proxyEventHandler: IProxyInterceptor<String, XmppCall>,
 ) {
     private val factory: DocumentBuilderFactory = DocumentBuilderFactory.newInstance()
     private val builder: DocumentBuilder = factory.newDocumentBuilder()
@@ -70,36 +64,25 @@ class XmppProxy internal constructor(
         //TODO Fix this with incremental parser lix SAX?
 
         launch(Dispatchers.IO) {
-            val byteArray = ByteArray(1024 * 1024)
-            val read = clientReadChannel.readAvailable(byteArray)
-            val doc: Document = builder.parse(byteArray.inputStream(0, read))
-
-            proxyEventHandler.onResponse(doc)
-
-            val transformerFactory = TransformerFactory.newInstance()
-            val transformer: Transformer = transformerFactory.newTransformer()
-            val stringWriter = StringWriter()
-            transformer.transform(DOMSource(doc), StreamResult(stringWriter))
-            val result = stringWriter.toString().toByteArray()
-
-            serverWriteChannel.writeFully(result)
+            val byteArray = ByteArray((1024 * 1024) * 10)
+            while (isActive) {
+                val read = clientReadChannel.readAvailable(byteArray)
+                val string = byteArray.copyOfRange(0, read).decodeToString()
+                if (string.isNotBlank()) proxyEventHandler.onResponse(string)
+                serverWriteChannel.writeFully(byteArray, 0, read)
+            }
         }
 
 
         launch(Dispatchers.IO) {
-            val byteArray = ByteArray(1024 * 1024)
-            val read = serverReadChannel.readAvailable(byteArray)
-            val doc: Document = builder.parse(byteArray.inputStream(0, read))
+            val byteArray = ByteArray((1024 * 1024) * 10)
+            while (isActive) {
+                val read = serverReadChannel.readAvailable(byteArray)
+                val string = byteArray.copyOfRange(0, read).decodeToString()
+                if (string.isNotBlank()) proxyEventHandler.onRequest(string)
 
-            proxyEventHandler.onRequest(doc)
-
-            val transformerFactory = TransformerFactory.newInstance()
-            val transformer: Transformer = transformerFactory.newTransformer()
-            val stringWriter = StringWriter()
-            transformer.transform(DOMSource(doc), StreamResult(stringWriter))
-            val result = stringWriter.toString().toByteArray()
-
-            clientWriteChannel.writeFully(result)
+                clientWriteChannel.writeFully(byteArray, 0, read)
+            }
         }
     }
 }

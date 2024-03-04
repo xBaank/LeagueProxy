@@ -1,16 +1,15 @@
 package proxies.interceptors
 
 import okhttp3.Headers
-import org.w3c.dom.Document
 import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 
 sealed interface Call {
     sealed interface XmppCall : Call {
-        val data: Document
+        val data: String
 
-        data class XmppRequest(override val data: Document) : XmppCall
-        data class XmppResponse(override val data: Document) : XmppCall
+        data class XmppRequest(override val data: String) : XmppCall
+        data class XmppResponse(override val data: String) : XmppCall
     }
 
     sealed interface ConfigCall : Call {

@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.TextStyle
@@ -124,6 +125,7 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
                 Text(
                     text = "$index - RTMP ${rtmpCallPreview(item)}",
                     style = TextStyle(
+                        color = Color.Red,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
                     ),
@@ -183,6 +185,7 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
                 Text(
                     text = "$index - CONFIG RESPONSE",
                     style = TextStyle(
+                        color = Color.Blue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
                     ),
@@ -228,6 +231,7 @@ fun RenderXmppCall(item: XmppCall, index: Int) {
                 Text(
                     text = "$index - XMPP ${xmppCallPreview(item)}",
                     style = TextStyle(
+                        color = Color.Green,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
                     ),
@@ -239,8 +243,10 @@ fun RenderXmppCall(item: XmppCall, index: Int) {
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.data.toString())
+                    RenderSelectableText(item.data)
                 }
+            } else {
+                Text("${item.data.substring(0, 50)}...")
             }
         }
     }
@@ -269,7 +275,7 @@ fun SnapshotStateList<Call>.filterByText(text: String) = filter {
         is ConfigResponse -> it.data.serialized().contains(text, true)
         is RtmpRequest -> it.data.prettyPrint().contains(text, true)
         is RtmpResponse -> it.data.prettyPrint().contains(text, true)
-        is XmppRequest -> true
-        is XmppResponse -> true //TODO
+        is XmppRequest -> it.data.contains(text, true)
+        is XmppResponse -> it.data.contains(text, true)
     }
 }
