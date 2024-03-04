@@ -5,6 +5,13 @@ import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 
 sealed interface Call {
+    sealed interface RmsCall : Call {
+        val data: JsonNode
+
+        data class RmsRequest(override val data: JsonNode) : RmsCall
+        data class RmsResponse(override val data: JsonNode) : RmsCall
+    }
+
     sealed interface XmppCall : Call {
         val data: String
 

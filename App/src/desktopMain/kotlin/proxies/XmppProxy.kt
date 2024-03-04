@@ -8,8 +8,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import proxies.interceptors.Call.XmppCall
 import proxies.interceptors.IProxyInterceptor
-import javax.xml.parsers.DocumentBuilder
-import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.coroutines.cancellation.CancellationException
 
 
@@ -26,8 +24,6 @@ class XmppProxy internal constructor(
     val port: Int,
     private val proxyEventHandler: IProxyInterceptor<String, XmppCall>,
 ) {
-    private val factory: DocumentBuilderFactory = DocumentBuilderFactory.newInstance()
-    private val builder: DocumentBuilder = factory.newDocumentBuilder()
 
     suspend fun start() = coroutineScope {
         while (isActive) {
@@ -64,10 +60,12 @@ class XmppProxy internal constructor(
             val byteArray = ByteArray((1024 * 1024) * 10)
             while (isActive) {
                 val read = clientReadChannel.readAvailable(byteArray)
-                if (read == -1) {
+                if (read == 0) continue
+                if (read < 0) {
                     socket.close()
                     clientSocket.close()
                     cancel("Socket closed")
+                    return@launch
                 }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
                 if (string.isNotBlank()) proxyEventHandler.onResponse(string)
@@ -80,10 +78,12 @@ class XmppProxy internal constructor(
             val byteArray = ByteArray((1024 * 1024) * 10)
             while (isActive) {
                 val read = serverReadChannel.readAvailable(byteArray)
-                if (read == -1) {
+                if (read == 0) continue
+                if (read < 0) {
                     socket.close()
                     clientSocket.close()
                     cancel("Socket closed")
+                    return@launch
                 }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
                 if (string.isNotBlank()) proxyEventHandler.onRequest(string)

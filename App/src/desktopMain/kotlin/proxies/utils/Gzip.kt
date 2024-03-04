@@ -18,3 +18,20 @@ fun String.gzipBase64(): String {
     GZIPOutputStream(outputStream).bufferedWriter(Charsets.UTF_8).use { it.write(this); it.flush() }
     return Base64.getEncoder().encodeToString(outputStream.toByteArray())
 }
+
+fun ByteArray.ungzip(): String {
+    val `in` = GZIPInputStream(this.inputStream())
+    return String(`in`.readBytes())
+}
+
+fun ByteArray.gzip(): String {
+    val outputStream = ByteArrayOutputStream()
+    GZIPOutputStream(outputStream).use { it.write(this); it.flush() }
+    return outputStream.toString(Charsets.UTF_8)
+}
+
+fun ByteArray.gzipArray(): ByteArray {
+    val outputStream = ByteArrayOutputStream()
+    GZIPOutputStream(outputStream).use { it.write(this); it.flush() }
+    return outputStream.toByteArray()
+}

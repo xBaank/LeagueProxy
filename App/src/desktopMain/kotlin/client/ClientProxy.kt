@@ -10,6 +10,7 @@ import proxies.RmsProxy
 import proxies.RtmpProxy
 import proxies.XmppProxy
 import proxies.interceptors.ConfigProxyInterceptor
+import proxies.interceptors.RmsProxyInterceptor
 import proxies.interceptors.RtmpProxyInterceptor
 import proxies.interceptors.XmppProxyInterceptor
 
@@ -17,6 +18,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     val rtmpProxyInterceptor by inject<RtmpProxyInterceptor>()
     val configProxyInterceptor by inject<ConfigProxyInterceptor>()
     val xmppProxyInterceptor by inject<XmppProxyInterceptor>()
+    val rmsProxyInterceptor by inject<RmsProxyInterceptor>()
 
     val rtmpProxies = systemYamlPatcher.rtmpHostsByRegion.map { (region, lcds) ->
         val proxyClient = RtmpProxy(lcds.host, lcds.port, rtmpProxyInterceptor)
@@ -26,7 +28,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     }
 
     val rmsProxies = systemYamlPatcher.rmsHostsByRegion.map { host ->
-        val proxyClient = RmsProxy(host.host)
+        val proxyClient = RmsProxy(host.host, rmsProxyInterceptor)
         println("Created rms proxy for ${host.host}")
         proxyClient
     }.toSet()

@@ -1,5 +1,6 @@
 package proxies
 
+import arrow.core.raise.catch
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.cio.*
 import io.ktor.client.request.*
@@ -14,12 +15,20 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import proxies.interceptors.Call
+import proxies.interceptors.IProxyInterceptor
 import proxies.utils.findFreePort
+import proxies.utils.gzipArray
+import proxies.utils.ungzip
+import simpleJson.JsonNode
+import simpleJson.deserialized
+import simpleJson.serialized
 import java.time.Duration
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
 
 
-class RmsProxy(val url: String) : AutoCloseable {
+class RmsProxy(val url: String, private val proxyEventHandler: IProxyInterceptor<JsonNode, Call.RmsCall>) :
+    AutoCloseable {
     val port: Int = findFreePort()
     private var server: NettyApplicationEngine? = null
 
@@ -34,7 +43,6 @@ class RmsProxy(val url: String) : AutoCloseable {
             routing {
                 webSocketRaw("{...}") webSocket@{
                     println("Accepted connection in ${call.request.uri}")
-                    val reqHeaders = call.request.headers
 
                     val clientSocket = client.webSocketRawSession(
                         method = HttpMethod.Get
@@ -47,6 +55,24 @@ class RmsProxy(val url: String) : AutoCloseable {
                     val job1 = launch(Dispatchers.IO) {
                         try {
                             for (frame in incoming) {
+                                val node = when (frame) {
+                                    is Frame.Text -> frame.readBytes().decodeToString().deserialized()
+                                        .getOrNull()
+
+                                    is Frame.Binary ->
+                                        catch({ frame.readBytes().ungzip().deserialized().getOrNull() }, { null })
+
+                                    else -> null
+                                }
+
+                                if (node != null) {
+                                    val response = proxyEventHandler.onRequest(node)
+                                    if (frame is Frame.Text) clientSocket.send(Frame.Text(response.data.serialized()))
+                                    if (frame is Frame.Binary) clientSocket.send(
+                                        Frame.Binary(frame.fin, response.data.serialized().toByteArray().gzipArray())
+                                    )
+                                    continue
+                                }
                                 clientSocket.send(frame)
                                 clientSocket.flush()
                             }
@@ -59,6 +85,25 @@ class RmsProxy(val url: String) : AutoCloseable {
                     val job2 = launch(Dispatchers.IO) {
                         try {
                             for (frame in clientSocket.incoming) {
+                                val node = when (frame) {
+                                    is Frame.Text -> frame.readBytes().decodeToString().deserialized()
+                                        .getOrNull()
+
+                                    is Frame.Binary ->
+                                        catch({ frame.readBytes().ungzip().deserialized().getOrNull() }, { null })
+
+                                    else -> null
+                                }
+
+                                if (node != null) {
+                                    val response = proxyEventHandler.onResponse(node)
+                                    if (frame is Frame.Text) send(Frame.Text(response.data.serialized()))
+                                    if (frame is Frame.Binary) send(
+                                        Frame.Binary(frame.fin, response.data.serialized().toByteArray().gzipArray())
+                                    )
+                                    continue
+                                }
+
                                 send(frame)
                                 flush()
                             }

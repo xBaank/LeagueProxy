@@ -4,6 +4,7 @@ import org.koin.dsl.module
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import proxies.interceptors.ConfigProxyInterceptor
+import proxies.interceptors.RmsProxyInterceptor
 import proxies.interceptors.RtmpProxyInterceptor
 import proxies.interceptors.XmppProxyInterceptor
 
@@ -15,5 +16,6 @@ val module = module {
     singleOf(::RtmpProxyInterceptor)
     singleOf(::XmppProxyInterceptor)
     singleOf(::ConfigProxyInterceptor)
+    singleOf(::RmsProxyInterceptor)
     singleOf(::SystemYamlPatcher)
 }
