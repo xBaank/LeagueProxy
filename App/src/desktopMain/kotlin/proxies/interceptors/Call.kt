@@ -5,6 +5,14 @@ import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 
 sealed interface Call {
+    sealed interface HttpCall : Call {
+        var data: JsonNode?
+        val url: String
+        var headers: Headers
+        val method: HttpMethod
+        val statusCode: HttpStatusCode?
+    }
+
     sealed interface RmsCall : Call {
         val data: JsonNode
 
@@ -19,16 +27,61 @@ sealed interface Call {
         data class XmppResponse(override val data: String) : XmppCall
     }
 
-    sealed interface ConfigCall : Call {
-        val data: JsonNode
-        val url: String
-        val headers: Headers
+    sealed interface ConfigCall : HttpCall {
+
+        data class ConfigRequest(
+            override var data: JsonNode?,
+            override val url: String,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode?,
+        ) : ConfigCall
 
         data class ConfigResponse(
-            override val data: JsonNode,
+            override var data: JsonNode?,
             override val url: String,
-            override val headers: Headers,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode,
         ) : ConfigCall
+    }
+
+    sealed interface RedEdgeCall : HttpCall {
+        data class RedEdgeResponse(
+            val port: Int,
+            override var data: JsonNode?,
+            override val url: String,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode?,
+        ) : RedEdgeCall
+
+        data class RedEdgeRequest(
+            override var data: JsonNode?,
+            override val url: String,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode?,
+        ) : RedEdgeCall
+    }
+
+    sealed interface RiotAuthCall : HttpCall {
+        data class RiotAuthResponse(
+            val port: Int,
+            override var data: JsonNode?,
+            override val url: String,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode?,
+        ) : RiotAuthCall
+
+        data class RiotAuthRequest(
+            override var data: JsonNode?,
+            override val url: String,
+            override var headers: Headers,
+            override val method: HttpMethod,
+            override val statusCode: HttpStatusCode?,
+        ) : RiotAuthCall
     }
 
     sealed interface RtmpCall : Call {

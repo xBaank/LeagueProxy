@@ -16,7 +16,6 @@ import org.koin.core.context.startKoin
 import proxies.utils.isRiotClientRunning
 import proxies.utils.showError
 import view.App
-import kotlin.system.exitProcess
 
 suspend fun main() {
     startKoin { modules(module) }
@@ -35,8 +34,6 @@ suspend fun main() {
             App(isRiotClientClosed)
         }
     }
-
-    exitProcess(0)
 }
 
 private suspend fun proxies(onStarted: () -> Unit, onClose: () -> Unit) = coroutineScope {

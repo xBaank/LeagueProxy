@@ -28,6 +28,8 @@ kotlin {
             implementation("io.ktor:ktor-client-cio:$ktor_version")
             implementation("io.ktor:ktor-client-websockets:$ktor_version")
             implementation("io.ktor:ktor-client-encoding:$ktor_version")
+            implementation("io.ktor:ktor-server-cors:$ktor_version")
+            implementation("io.ktor:ktor-server-sessions:$ktor_version")
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")
             implementation("ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0")

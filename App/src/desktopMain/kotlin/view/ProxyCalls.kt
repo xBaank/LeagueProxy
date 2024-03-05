@@ -21,10 +21,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
+import io.ktor.util.*
 import org.koin.compose.koinInject
 import proxies.interceptors.*
 import proxies.interceptors.Call.*
+import proxies.interceptors.Call.ConfigCall.ConfigRequest
 import proxies.interceptors.Call.ConfigCall.ConfigResponse
+import proxies.interceptors.Call.RedEdgeCall.RedEdgeRequest
+import proxies.interceptors.Call.RedEdgeCall.RedEdgeResponse
+import proxies.interceptors.Call.RiotAuthCall.RiotAuthRequest
+import proxies.interceptors.Call.RiotAuthCall.RiotAuthResponse
 import proxies.interceptors.Call.RmsCall.RmsRequest
 import proxies.interceptors.Call.RmsCall.RmsResponse
 import proxies.interceptors.Call.RtmpCall.RtmpRequest
@@ -40,19 +46,15 @@ import simpleJson.serializedPretty
 fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
     var searchText by remember { mutableStateOf("") }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
-    val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS")
+    val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS", "RED EDGE", "RIOT AUTH")
     val selectedItems = remember { mutableStateOf(dropDownItems.toList()) }
     val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
-    val configInterceptor = koinInject<ConfigProxyInterceptor>()
     val xmppInterceptor = koinInject<XmppProxyInterceptor>()
     val rmsInterceptor = koinInject<RmsProxyInterceptor>()
+    val httpProxyInterceptor = koinInject<HttpProxyInterceptor>()
 
     LaunchedEffect(Unit) {
         rtmpInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        configInterceptor.calls.collect(items::add)
     }
 
     LaunchedEffect(Unit) {
@@ -61,6 +63,10 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
 
     LaunchedEffect(Unit) {
         rmsInterceptor.calls.collect(items::add)
+    }
+
+    LaunchedEffect(Unit) {
+        httpProxyInterceptor.calls.collect(items::add)
     }
 
     if (items.isEmpty()) {
@@ -79,11 +85,12 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
 
     Column {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
+                verticalArrangement = Arrangement.Top,
                 modifier = Modifier
                     .padding(16.dp)
             ) {
@@ -108,7 +115,7 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
         LazyColumn {
             itemsIndexed(items.filterBySelection(selectedItems.value).filterByText(searchText)) { index, item ->
                 when (item) {
-                    is ConfigResponse -> ListItem(headlineContent = { RenderConfigCall(item, index) })
+                    is HttpCall -> ListItem(headlineContent = { RenderHttpCall(item, index) })
                     is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
                     is XmppCall -> ListItem(headlineContent = { RenderXmppCall(item, index) })
                     is RmsCall -> ListItem(headlineContent = { RenderRmsCall(item, index) })
@@ -139,7 +146,7 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - RTMP ${rtmpCallPreview(item)}",
+                    text = "$index - ${callPreview(item)}",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
@@ -179,7 +186,7 @@ fun RenderRtmpCall(item: RtmpCall, index: Int) {
 }
 
 @Composable
-fun RenderConfigCall(item: ConfigCall, index: Int) {
+fun RenderHttpCall(item: HttpCall, index: Int) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -198,7 +205,7 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - CONFIG RESPONSE",
+                    text = "$index - ${callPreview(item)}",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
@@ -215,8 +222,9 @@ fun RenderConfigCall(item: ConfigCall, index: Int) {
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.headers.entries().prettyPrint())
-                    RenderSelectableText(item.data.serializedPretty())
+                    RenderSelectableText(item.method.value)
+                    RenderSelectableText(item.headers.toMap().prettyPrint())
+                    if (item.data != null) RenderSelectableText(item.data!!.serializedPretty())
                 }
             }
         }
@@ -243,7 +251,7 @@ fun RenderXmppCall(item: XmppCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - XMPP ${xmppCallPreview(item)}",
+                    text = "$index - ${callPreview(item)}",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
@@ -285,7 +293,7 @@ fun RenderRmsCall(item: RmsCall, index: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$index - RMS ${rmsCallPreview(item)}",
+                    text = "$index - ${callPreview(item)}",
                     style = TextStyle(
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp // Adjust the font size as needed
@@ -325,35 +333,37 @@ private fun RenderSelectableText(text: String) {
     }
 }
 
-fun rtmpCallPreview(item: RtmpCall) = when (item) {
-    is RtmpRequest -> "REQUEST"
-    is RtmpResponse -> "RESPONSE"
-}
-
-fun xmppCallPreview(item: XmppCall) = when (item) {
-    is XmppRequest -> "REQUEST"
-    is XmppResponse -> "RESPONSE"
-}
-
-fun rmsCallPreview(item: RmsCall) = when (item) {
-    is RmsRequest -> "REQUEST"
-    is RmsResponse -> "RESPONSE"
+fun callPreview(item: Call) = when (item) {
+    is RedEdgeRequest -> "RED EDGE REQUEST"
+    is RedEdgeResponse -> "RED EDGE RESPONSE ${item.statusCode?.value}"
+    is ConfigResponse -> "CONFIG RESPONSE ${item.statusCode.value}"
+    is ConfigRequest -> "CONFIG REQUEST"
+    is RmsRequest -> "RMS REQUEST"
+    is RmsResponse -> "RMS RESPONSE"
+    is RtmpRequest -> "RTMP REQUEST"
+    is RtmpResponse -> "RTMP RESPONSE"
+    is XmppRequest -> "XMPP REQUEST"
+    is XmppResponse -> "XMPP RESPONSE"
+    is RiotAuthRequest -> "RIOT AUTH REQUEST"
+    is RiotAuthResponse -> "RIOT AUTH RESPONSE ${item.statusCode?.value}"
 }
 
 
 fun List<Call>.filterBySelection(list: List<String>) = filter {
     when (it) {
-        is ConfigResponse -> list.contains("CONFIG")
+        is ConfigCall -> list.contains("CONFIG")
         is RtmpCall -> list.contains("RTMP")
         is XmppCall -> list.contains("XMPP")
         is RmsCall -> list.contains("RMS")
+        is RedEdgeCall -> list.contains("RED EDGE")
+        is RiotAuthCall -> list.contains("RIOT AUTH")
     }
 }
 
 fun List<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is ConfigResponse -> it.data.serialized().contains(text, true)
+        is HttpCall -> it.data?.serialized()?.contains(text, true) ?: false
         is RtmpCall -> it.data.prettyPrint().contains(text, true)
         is XmppCall -> it.data.contains(text, true)
         is RmsCall -> it.data.serialized().contains(text, true)
