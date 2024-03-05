@@ -64,7 +64,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     val rioEntitlementAuthProxy = run {
         val host = "https://entitlements.auth.riotgames.com/api/token/v1"
         val proxyClient = HttpProxy(host, httpProxyInterceptor, ::RiotAuthRequest, ::RiotAuthResponse)
-        println("Created riot auth proxy for $host")
+        println("Created riot entitlement proxy for $host")
         proxyClient
     }
 
@@ -145,11 +145,11 @@ class ClientProxy internal constructor(
             launch { proxyClient.start() }
         }
 
-        /*        println("Started riot auth proxy for ${riotAuthProxy.url} on port ${riotAuthProxy.port}")
-                riotAuthProxy.start()
+        println("Started riot auth proxy for ${riotAuthProxy.url} on port ${riotAuthProxy.port}")
+        riotAuthProxy.start()
 
-                println("Started riot authenticate proxy for ${riotAuthenticateProxy.url} on port ${riotAuthenticateProxy.port}")
-                riotAuthenticateProxy.start()*/
+        println("Started riot authenticate proxy for ${riotAuthenticateProxy.url} on port ${riotAuthenticateProxy.port}")
+        riotAuthenticateProxy.start()
 
         println("Started riot entitlement auth proxy for ${riotEntitlementAuthProxy.url} on port ${riotEntitlementAuthProxy.port}")
         riotEntitlementAuthProxy.start()

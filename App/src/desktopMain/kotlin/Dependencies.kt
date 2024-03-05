@@ -23,8 +23,6 @@ val module = module {
             }
             install(ContentEncoding) {
                 gzip()
-                deflate()
-
             }
         }
     }

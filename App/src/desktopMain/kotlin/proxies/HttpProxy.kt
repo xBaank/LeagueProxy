@@ -1,6 +1,7 @@
 package proxies
 
 import extensions.inject
+import extensions.isJson
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -12,9 +13,12 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.*
+import io.ktor.utils.io.jvm.javaio.*
 import proxies.interceptors.Call.HttpCall
 import proxies.interceptors.HttpProxyInterceptor
 import proxies.utils.findFreePort
+import proxies.utils.gzip
 import simpleJson.JsonNode
 import simpleJson.deserialized
 import simpleJson.serialized
@@ -50,16 +54,20 @@ class HttpProxy(
                 anyHost()
                 allowHeaders { true }
                 HttpMethod.DefaultMethods.forEach { allowMethod(it) }
+                allowCredentials = true
                 allowHeader("access-control-expose-headers")
             }
             routing {
                 route("{...}") {
                     handle {
+                        val url = "$url${call.request.uri}"
+
                         try {
-                            val url = "$url${call.request.uri}"
-                            val body = if (call.request.contentType() == ContentType.Application.Json)
-                                call.receiveText().deserialized().getOrNull()
-                            else null
+                            val body =
+                                if (call.request.headers.isJson()) {
+                                    val text = call.receiveText().replace("\\u0001", "")
+                                    text.deserialized().getOrNull()
+                                } else null
 
                             val interceptedRequest = proxyInterceptor.onRequest(
                                 requestCreator(
@@ -76,11 +84,15 @@ class HttpProxy(
                                 method = interceptedRequest.method
                                 this.headers.appendAll(interceptedRequest.headers)
                                 if (interceptedRequest.data != null) setBody(interceptedRequest.data!!.serialized())
+                                else if (interceptedRequest.headers.isJson() && interceptedRequest.data == null) Unit
+                                else setBody(call.receiveChannel().toByteArray())
                             }
 
-
-                            val responseBytes = response.bodyAsText()
-                            val json = responseBytes.deserialized().getOrNull()
+                            val json =
+                                if (response.headers.isJson()) {
+                                    val text = response.bodyAsText()
+                                    text.deserialized().getOrNull()
+                                } else null
 
                             val interceptedResponse = proxyInterceptor.onResponse(
                                 responseCreator(
@@ -98,22 +110,20 @@ class HttpProxy(
                                     call.response.headers.append(s, it)
                                 }
                             }
-
-
-
+                            
                             if (interceptedResponse.data == null) {
+                                call.respondOutputStream(
+                                    status = interceptedResponse.statusCode ?: HttpStatusCode.OK
+                                ) {
+                                    response.bodyAsChannel().copyTo(this)
+                                }
+                            } else if (interceptedResponse.headers["Content-Encoding"].equals("gzip", true)) {
                                 call.respondBytes(
                                     status = interceptedResponse.statusCode ?: HttpStatusCode.OK
                                 ) {
-                                    byteArrayOf()
+                                    interceptedResponse.data!!.serialized().gzip()
                                 }
                             } else {
-                                val data = interceptedResponse.data!!.serialized()
-                                call.response.headers.append(
-                                    "Content-Length",
-                                    data.toByteArray().count().toString()
-                                )
-
                                 call.respondText(
                                     text = interceptedResponse.data!!.serialized(),
                                     status = interceptedResponse.statusCode ?: HttpStatusCode.OK
@@ -121,6 +131,7 @@ class HttpProxy(
                             }
                         } catch (ex: Throwable) {
                             println(ex)
+                            println(url)
                             throw ex
                         }
                     }

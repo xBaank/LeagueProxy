@@ -4,26 +4,18 @@ import io.ktor.http.*
 import io.ktor.util.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import proxies.interceptors.Call.HttpCall
+import proxies.interceptors.Call.RedEdgeCall.RedEdgeResponse
 import proxies.interceptors.Call.RiotAuthCall.RiotAuthResponse
-import simpleJson.set
+import simpleJson.*
 
 class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
     val calls: MutableSharedFlow<HttpCall> = MutableSharedFlow()
 
     private fun fixRiotAuth(value: RiotAuthResponse) {
         if (value.data != null && value.url == "https://auth.riotgames.com/.well-known/openid-configuration") {
-            val data = value.data!!
             val endpoint = "http://127.0.0.1:${value.port}"
-            data["end_session_endpoint"] = "$endpoint/logout"
-            data["pushed_authorization_request_endpoint"] = "$endpoint/par"
-            data["revocation_endpoint"] = "$endpoint/token/revoke"
-            data["userinfo_endpoint"] = "$endpoint/userinfo"
-            data["token_endpoint"] = "$endpoint/token"
-            data["authorization_endpoint"] = "$endpoint/authorize"
-            data["jwks_uri"] = "$endpoint/jwks.json"
-            data["check_session_iframe"] = "$endpoint/check-session-iframe"
-            data["tls_client_certificate_bound_access_tokens"] = false
-
+            val asString = value.data!!.serialized().replace("https://auth.riotgames.com", endpoint)
+            value.data = asString.deserialized().getOrNull()
         }
     }
 
@@ -51,8 +43,23 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
         return value
     }
 
+    private fun fixCraft(value: HttpCall) {
+        if (value.data != null && value.url == "https://euw-red.lol.sgp.pvp.net/personalized-offers/v1/player/offers?lang=es_ES") {
+            val json = value.data!!
+            if (json["offers"].isRight()) {
+                json["offers"].asArray().getOrNull()?.forEach {
+                    val originalPrice = it["originalPrice"].asInt().getOrNull() ?: 0
+                    it["originalPrice"] = originalPrice
+                    it["discountPrice"] = 0
+                    it["discountAmount"] = 100
+                }
+            }
+        }
+    }
+
     override suspend fun onResponse(value: HttpCall): HttpCall {
         if (value is RiotAuthResponse) fixRiotAuth(value)
+        if (value is RedEdgeResponse) fixCraft(value)
         fixHeaders(value)
         calls.emit(value)
         return value

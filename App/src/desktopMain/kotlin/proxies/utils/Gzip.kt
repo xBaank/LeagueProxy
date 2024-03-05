@@ -24,10 +24,10 @@ fun ByteArray.ungzip(): String {
     return String(`in`.readBytes())
 }
 
-fun ByteArray.gzip(): String {
+fun String.gzip(): ByteArray {
     val outputStream = ByteArrayOutputStream()
-    GZIPOutputStream(outputStream).use { it.write(this); it.flush() }
-    return outputStream.toString(Charsets.UTF_8)
+    GZIPOutputStream(outputStream).bufferedWriter(Charsets.UTF_8).use { it.write(this); it.flush() }
+    return outputStream.toByteArray()
 }
 
 fun ByteArray.gzipArray(): ByteArray {

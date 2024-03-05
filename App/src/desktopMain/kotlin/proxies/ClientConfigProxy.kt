@@ -107,13 +107,13 @@ class ClientConfigProxy(
             }
         }
 
-        /*        if (json["keystone.rso-authenticator.service_url"].isRight()) {
-                    json["keystone.rso-authenticator.service_url"] = "http://127.0.0.1:${riotAuthenticateProxy.port}"
-                }
+        if (json["keystone.rso-authenticator.service_url"].isRight()) {
+            json["keystone.rso-authenticator.service_url"] = "http://127.0.0.1:${riotAuthenticateProxy.port}"
+        }
 
-                if (json["keystone.rso_auth.url"].isRight()) {
-                    json["keystone.rso_auth.url"] = "http://127.0.0.1:${riotAuthProxy.port}"
-                }*/
+        if (json["keystone.rso_auth.url"].isRight()) {
+            json["keystone.rso_auth.url"] = "http://127.0.0.1:${riotAuthProxy.port}"
+        }
 
         if (json["keystone.player-affinity.playerAffinityServiceURL"].isRight()) {
             json["keystone.player-affinity.playerAffinityServiceURL"] = "http://127.0.0.1:${riotAffinityServer.port}"

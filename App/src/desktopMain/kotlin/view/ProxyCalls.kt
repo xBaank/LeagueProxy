@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
+import extensions.serializedMemo
 import io.ktor.util.*
 import org.koin.compose.koinInject
 import proxies.interceptors.*
@@ -363,9 +364,9 @@ fun List<Call>.filterBySelection(list: List<String>) = filter {
 fun List<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is HttpCall -> it.data?.serialized()?.contains(text, true) ?: false
+        is HttpCall -> it.data?.serializedMemo()?.contains(text, true) ?: false || it.url.contains(text, true)
         is RtmpCall -> it.data.prettyPrint().contains(text, true)
         is XmppCall -> it.data.contains(text, true)
-        is RmsCall -> it.data.serialized().contains(text, true)
+        is RmsCall -> it.data.serializedMemo().contains(text, true)
     }
 }
