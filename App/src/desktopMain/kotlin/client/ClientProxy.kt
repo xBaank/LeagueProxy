@@ -127,22 +127,22 @@ class ClientProxy internal constructor(
     suspend fun startProxies() = coroutineScope {
         rtmpProxies.onEach { (region, proxyClient) ->
             println("Started rtmp proxy for $region on port ${proxyClient.serverSocket.localAddress.port}")
-            launch { proxyClient.start() }
+            launch(Dispatchers.IO) { proxyClient.start() }
         }
 
         rmsProxies.onEach { proxyClient ->
             println("Started rms proxy for ${proxyClient.url} on port ${proxyClient.port}")
-            launch { proxyClient.start() }
+            launch(Dispatchers.IO) { proxyClient.start() }
         }
 
         redEdgeProxies.onEach { proxyClient ->
             println("Started red edge proxy for ${proxyClient.url} on port ${proxyClient.port}")
-            launch { proxyClient.start() }
+            launch(Dispatchers.IO) { proxyClient.start() }
         }
 
         xmppProxies.onEach { (region, proxyClient) ->
             println("Started xmpp proxy for $region on port ${proxyClient.serverSocket.localAddress.port}")
-            launch { proxyClient.start() }
+            launch(Dispatchers.IO) { proxyClient.start() }
         }
 
         println("Started riot auth proxy for ${riotAuthProxy.url} on port ${riotAuthProxy.port}")
@@ -177,7 +177,13 @@ class ClientProxy internal constructor(
 
     override fun close() {
         rmsProxies.forEach { it.close() }
+        redEdgeProxies.forEach { it.close() }
+        rmsProxies.forEach { it.close() }
         clientConfigProxy.close()
+        riotAuthenticateProxy.close()
+        riotAuthProxy.close()
+        riotAffinityProxy.close()
+        riotEntitlementAuthProxy.close()
         systemYamlPatcher.close()
         onClientClose()
     }

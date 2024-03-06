@@ -5,6 +5,7 @@ import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
 import extensions.serializedMemo
+import extensions.serializedPrettyMemo
 import io.ktor.util.*
 import org.koin.compose.koinInject
 import proxies.interceptors.*
@@ -39,8 +41,6 @@ import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.interceptors.Call.XmppCall.XmppRequest
 import proxies.interceptors.Call.XmppCall.XmppResponse
 import proxies.utils.Amf0PrettyBuilder
-import simpleJson.serialized
-import simpleJson.serializedPretty
 
 
 @Composable
@@ -113,7 +113,8 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
                 modifier = Modifier.padding(16.dp)
             )
         }
-        LazyColumn {
+        val lazyColumnSatate = rememberLazyListState()
+        LazyColumn(state = lazyColumnSatate, modifier = Modifier.simpleVerticalScrollbar(state = lazyColumnSatate)) {
             itemsIndexed(items.filterBySelection(selectedItems.value).filterByText(searchText)) { index, item ->
                 when (item) {
                     is HttpCall -> ListItem(headlineContent = { RenderHttpCall(item, index) })
@@ -224,8 +225,8 @@ fun RenderHttpCall(item: HttpCall, index: Int) {
             if (expanded) {
                 Column {
                     RenderSelectableText(item.method.value)
-                    RenderSelectableText(item.headers.toMap().prettyPrint())
-                    if (item.data != null) RenderSelectableText(item.data!!.serializedPretty())
+                    RenderSelectableText(item.headers.toMap().serializedMemo())
+                    if (item.data != null) RenderSelectableText(item.data!!.serializedPrettyMemo())
                 }
             }
         }
@@ -307,10 +308,10 @@ fun RenderRmsCall(item: RmsCall, index: Int) {
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.data.serializedPretty())
+                    RenderSelectableText(item.data.serializedMemo())
                 }
             } else {
-                Text("${item.data.serialized().substring(0, minOf(item.data.serialized().length, 50))}...")
+                Text("${item.data.serializedMemo().substring(0, minOf(item.data.serializedMemo().length, 50))}...")
             }
         }
     }
@@ -364,9 +365,9 @@ fun List<Call>.filterBySelection(list: List<String>) = filter {
 fun List<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is HttpCall -> it.data?.serializedMemo()?.contains(text, true) ?: false || it.url.contains(text, true)
-        is RtmpCall -> it.data.prettyPrint().contains(text, true)
+        is HttpCall -> it.data?.serializedPrettyMemo()?.contains(text, true) ?: false || it.url.contains(text, true)
+        is RtmpCall -> it.data.serializedMemo().contains(text, true)
         is XmppCall -> it.data.contains(text, true)
-        is RmsCall -> it.data.serializedMemo().contains(text, true)
+        is RmsCall -> it.data.serializedPrettyMemo().contains(text, true)
     }
 }
