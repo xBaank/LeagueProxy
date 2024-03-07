@@ -39,11 +39,11 @@ fun TextArea(text: String) {
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .border(width = 1.dp, color = MaterialTheme.colorScheme.onBackground)
-            .background(color = MaterialTheme.colorScheme.background)
+            .background(color = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         BasicTextField(
             textStyle = TextStyle(
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             ),
             modifier = Modifier
                 .height(textHeight)

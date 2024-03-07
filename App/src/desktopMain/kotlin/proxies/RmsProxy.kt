@@ -6,8 +6,8 @@ import io.ktor.client.plugins.websocket.cio.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -29,10 +29,10 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
     Proxy {
     override val port: Int = findFreePort()
     override val started: CompletableJob = Job()
-    private var server: NettyApplicationEngine? = null
+    private var server: ApplicationEngine? = null
 
     override suspend fun start() {
-        val server = embeddedServer(Netty, port = port) {
+        val server = embeddedServer(CIO, port = port) {
             install(WebSockets) {
                 pingPeriod = Duration.ofSeconds(60)
             }

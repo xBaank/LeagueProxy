@@ -23,7 +23,7 @@ kotlin {
             implementation("io.ktor:ktor-network:$ktor_version")
             implementation("io.ktor:ktor-network-tls:$ktor_version")
             implementation("io.ktor:ktor-server-websockets:$ktor_version")
-            implementation("io.ktor:ktor-server-netty:$ktor_version")
+            implementation("io.ktor:ktor-server-cio:$ktor_version")
             implementation("io.ktor:ktor-client-core:$ktor_version")
             implementation("io.ktor:ktor-client-cio:$ktor_version")
             implementation("io.ktor:ktor-client-websockets:$ktor_version")
