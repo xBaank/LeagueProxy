@@ -176,6 +176,7 @@ class ClientProxy internal constructor(
     }
 
     override fun close() {
+        systemYamlPatcher.close()
         rmsProxies.forEach { it.close() }
         redEdgeProxies.forEach { it.close() }
         rmsProxies.forEach { it.close() }
@@ -184,7 +185,6 @@ class ClientProxy internal constructor(
         riotAuthProxy.close()
         riotAffinityProxy.close()
         riotEntitlementAuthProxy.close()
-        systemYamlPatcher.close()
         onClientClose()
     }
 }

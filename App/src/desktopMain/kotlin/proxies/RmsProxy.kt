@@ -121,6 +121,6 @@ class RmsProxy(val url: String, private val proxyEventHandler: IProxyInterceptor
     }
 
     override fun close() {
-        server?.stop(500, 500)
+        server?.stop(50, 50)
     }
 }

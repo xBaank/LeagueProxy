@@ -10,7 +10,7 @@ sealed interface Call {
         val url: String
         var headers: Headers
         val method: HttpMethod
-        val statusCode: HttpStatusCode?
+        var statusCode: HttpStatusCode?
     }
 
     sealed interface RmsCall : Call {
@@ -34,7 +34,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode?,
+            override var statusCode: HttpStatusCode?,
         ) : ConfigCall
 
         data class ConfigResponse(
@@ -42,7 +42,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode,
+            override var statusCode: HttpStatusCode?,
         ) : ConfigCall
     }
 
@@ -53,7 +53,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode?,
+            override var statusCode: HttpStatusCode?,
         ) : RedEdgeCall
 
         data class RedEdgeRequest(
@@ -61,7 +61,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode?,
+            override var statusCode: HttpStatusCode?,
         ) : RedEdgeCall
     }
 
@@ -72,7 +72,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode?,
+            override var statusCode: HttpStatusCode?,
         ) : RiotAuthCall
 
         data class RiotAuthRequest(
@@ -80,7 +80,7 @@ sealed interface Call {
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
-            override val statusCode: HttpStatusCode?,
+            override var statusCode: HttpStatusCode?,
         ) : RiotAuthCall
     }
 

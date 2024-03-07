@@ -155,6 +155,6 @@ class ClientConfigProxy(
     }
 
     override fun close() {
-        server?.stop(500, 500)
+        server?.stop(50, 50)
     }
 }

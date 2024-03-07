@@ -4,9 +4,9 @@ import io.ktor.http.*
 import io.ktor.util.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import proxies.interceptors.Call.HttpCall
-import proxies.interceptors.Call.RedEdgeCall.RedEdgeResponse
 import proxies.interceptors.Call.RiotAuthCall.RiotAuthResponse
-import simpleJson.*
+import simpleJson.deserialized
+import simpleJson.serialized
 
 class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
     val calls: MutableSharedFlow<HttpCall> = MutableSharedFlow()
@@ -36,30 +36,14 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
         }
     }
 
-
     override suspend fun onRequest(value: HttpCall): HttpCall {
         fixHeaders(value)
         calls.emit(value)
         return value
     }
 
-    private fun fixCraft(value: HttpCall) {
-        if (value.data != null && value.url == "https://euw-red.lol.sgp.pvp.net/personalized-offers/v1/player/offers?lang=es_ES") {
-            val json = value.data!!
-            if (json["offers"].isRight()) {
-                json["offers"].asArray().getOrNull()?.forEach {
-                    val originalPrice = it["originalPrice"].asInt().getOrNull() ?: 0
-                    it["originalPrice"] = originalPrice
-                    it["discountPrice"] = 0
-                    it["discountAmount"] = 100
-                }
-            }
-        }
-    }
-
     override suspend fun onResponse(value: HttpCall): HttpCall {
         if (value is RiotAuthResponse) fixRiotAuth(value)
-        if (value is RedEdgeResponse) fixCraft(value)
         fixHeaders(value)
         calls.emit(value)
         return value

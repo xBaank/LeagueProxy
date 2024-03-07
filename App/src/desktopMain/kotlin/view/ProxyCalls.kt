@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -23,7 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import extensions.prettyPrint
 import extensions.serializedMemo
-import extensions.serializedPrettyMemo
+import extensions.serializedMemoCutted
+import extensions.serializedPrettyMemoCutted
 import io.ktor.util.*
 import org.koin.compose.koinInject
 import proxies.interceptors.*
@@ -41,6 +41,7 @@ import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.interceptors.Call.XmppCall.XmppRequest
 import proxies.interceptors.Call.XmppCall.XmppResponse
 import proxies.utils.Amf0PrettyBuilder
+import simpleJson.serialized
 
 
 @Composable
@@ -98,7 +99,7 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
                 TextField(
                     value = searchText,
                     onValueChange = { searchText = it },
-                    label = { Text("Search") },
+                    label = { Text("Search by url or body") },
                     modifier = Modifier
                         .padding(bottom = 10.dp)
                         .fillMaxWidth(0.9F)
@@ -115,7 +116,9 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
         }
         val lazyColumnSatate = rememberLazyListState()
         LazyColumn(state = lazyColumnSatate, modifier = Modifier.simpleVerticalScrollbar(state = lazyColumnSatate)) {
-            itemsIndexed(items.filterBySelection(selectedItems.value).filterByText(searchText)) { index, item ->
+            itemsIndexed(
+                items.asSequence().filterBySelection(selectedItems.value).filterByText(searchText).toList()
+            ) { index, item ->
                 when (item) {
                     is HttpCall -> ListItem(headlineContent = { RenderHttpCall(item, index) })
                     is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
@@ -218,15 +221,39 @@ fun RenderHttpCall(item: HttpCall, index: Int) {
                 }
             }
 
-            SelectionContainer {
-                Text(text = item.url, modifier = Modifier.padding(8.dp))
+            @Composable
+            fun headerText(value: String) = Text(
+                value,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                ),
+            )
+
+            if (item.statusCode != null) {
+                headerText("Status")
+                RenderSelectableText(item.statusCode?.value.toString())
             }
+
+            headerText("Url")
+            RenderSelectableText(item.url)
+
+
+            headerText("Method")
+            RenderSelectableText(item.method.value)
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.method.value)
+
+
+                    headerText("Headers")
                     RenderSelectableText(item.headers.toMap().serializedMemo())
-                    if (item.data != null) RenderSelectableText(item.data!!.serializedPrettyMemo())
+
+
+                    if (item.data != null) {
+                        headerText("Body")
+                        RenderSelectableText(item.data!!.serializedPrettyMemoCutted()) { item.data!!.serialized() }
+                    }
                 }
             }
         }
@@ -308,37 +335,40 @@ fun RenderRmsCall(item: RmsCall, index: Int) {
 
             if (expanded) {
                 Column {
-                    RenderSelectableText(item.data.serializedMemo())
+                    RenderSelectableText(item.data.serializedMemoCutted())
                 }
             } else {
-                Text("${item.data.serializedMemo().substring(0, minOf(item.data.serializedMemo().length, 50))}...")
+                Text(
+                    "${
+                        item.data.serializedMemoCutted()
+                            .substring(0, minOf(item.data.serializedMemoCutted().length, 50))
+                    }..."
+                )
             }
         }
     }
 }
 
 @Composable
-private fun RenderSelectableText(text: String) {
+private fun RenderSelectableText(text: String, originalTextF: (() -> String)? = null) {
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
     ContextMenuDataProvider(
         items = {
             listOf(
                 ContextMenuItem("Copy all") {
-                    clipboardManager.setText(AnnotatedString((text)))
+                    clipboardManager.setText(AnnotatedString((originalTextF?.invoke() ?: text)))
                 },
             )
         }
     ) {
-        SelectionContainer {
-            TextArea(text)
-        }
+        TextArea(text)
     }
 }
 
 fun callPreview(item: Call) = when (item) {
     is RedEdgeRequest -> "RED EDGE REQUEST"
-    is RedEdgeResponse -> "RED EDGE RESPONSE ${item.statusCode?.value}"
-    is ConfigResponse -> "CONFIG RESPONSE ${item.statusCode.value}"
+    is RedEdgeResponse -> "RED EDGE RESPONSE"
+    is ConfigResponse -> "CONFIG RESPONSE"
     is ConfigRequest -> "CONFIG REQUEST"
     is RmsRequest -> "RMS REQUEST"
     is RmsResponse -> "RMS RESPONSE"
@@ -347,11 +377,11 @@ fun callPreview(item: Call) = when (item) {
     is XmppRequest -> "XMPP REQUEST"
     is XmppResponse -> "XMPP RESPONSE"
     is RiotAuthRequest -> "RIOT AUTH REQUEST"
-    is RiotAuthResponse -> "RIOT AUTH RESPONSE ${item.statusCode?.value}"
+    is RiotAuthResponse -> "RIOT AUTH RESPONSE"
 }
 
 
-fun List<Call>.filterBySelection(list: List<String>) = filter {
+fun Sequence<Call>.filterBySelection(list: List<String>) = filter {
     when (it) {
         is ConfigCall -> list.contains("CONFIG")
         is RtmpCall -> list.contains("RTMP")
@@ -362,12 +392,16 @@ fun List<Call>.filterBySelection(list: List<String>) = filter {
     }
 }
 
-fun List<Call>.filterByText(text: String) = filter {
+fun Sequence<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is HttpCall -> it.data?.serializedPrettyMemo()?.contains(text, true) ?: false || it.url.contains(text, true)
+        is HttpCall -> it.data?.serializedPrettyMemoCutted()?.contains(text, true) ?: false || it.url.contains(
+            text,
+            true
+        )
+
         is RtmpCall -> it.data.serializedMemo().contains(text, true)
         is XmppCall -> it.data.contains(text, true)
-        is RmsCall -> it.data.serializedPrettyMemo().contains(text, true)
+        is RmsCall -> it.data.serializedPrettyMemoCutted().contains(text, true)
     }
 }
