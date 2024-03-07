@@ -20,10 +20,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import extensions.prettyPrint
-import extensions.serializedMemo
-import extensions.serializedMemoCutted
-import extensions.serializedPrettyMemoCutted
+import extensions.*
 import io.ktor.util.*
 import org.koin.compose.koinInject
 import proxies.interceptors.*
@@ -41,7 +38,6 @@ import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.interceptors.Call.XmppCall.XmppRequest
 import proxies.interceptors.Call.XmppCall.XmppResponse
 import proxies.utils.Amf0PrettyBuilder
-import simpleJson.serialized
 
 
 @Composable
@@ -244,15 +240,12 @@ fun RenderHttpCall(item: HttpCall, index: Int) {
 
             if (expanded) {
                 Column {
-
-
                     headerText("Headers")
                     RenderSelectableText(item.headers.toMap().serializedMemo())
 
-
-                    if (item.data != null) {
+                    if (!item.body.isEmpty()) {
                         headerText("Body")
-                        RenderSelectableText(item.data!!.serializedPrettyMemoCutted()) { item.data!!.serialized() }
+                        RenderSelectableText(item.body.serializedPrettyMemoCutted()) { item.body.serialized() }
                     }
                 }
             }
@@ -395,7 +388,7 @@ fun Sequence<Call>.filterBySelection(list: List<String>) = filter {
 fun Sequence<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is HttpCall -> it.data?.serializedPrettyMemoCutted()?.contains(text, true) ?: false || it.url.contains(
+        is HttpCall -> it.body.serializedPrettyMemoCutted().contains(text, true) || it.url.contains(
             text,
             true
         )

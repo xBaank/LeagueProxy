@@ -1,7 +1,6 @@
 package proxies
 
-import extensions.inject
-import extensions.isJson
+import extensions.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -14,12 +13,11 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
-import io.ktor.utils.io.jvm.javaio.*
+import proxies.interceptors.Body
 import proxies.interceptors.Call.HttpCall
 import proxies.interceptors.HttpProxyInterceptor
 import proxies.utils.findFreePort
-import proxies.utils.gzip
-import simpleJson.JsonNode
+import proxies.utils.gzipArray
 import simpleJson.deserialized
 import simpleJson.serialized
 
@@ -28,24 +26,23 @@ class HttpProxy(
     val url: String,
     val proxyInterceptor: HttpProxyInterceptor,
     val requestCreator: (
-        data: JsonNode?,
+        data: Body,
         url: String,
         headers: Headers,
         method: HttpMethod,
         status: HttpStatusCode?,
     ) -> HttpCall,
     val responseCreator: (
-        port: Int,
-        data: JsonNode?,
+        data: Body,
         url: String,
         headers: Headers,
         method: HttpMethod,
         status: HttpStatusCode?,
     ) -> HttpCall,
+    val port: Int = findFreePort(),
 ) : AutoCloseable {
 
     val client by inject<HttpClient>()
-    val port: Int = findFreePort()
     private var server: NettyApplicationEngine? = null
 
     fun start() {
@@ -63,11 +60,21 @@ class HttpProxy(
                         val url = "$url${call.request.uri}"
 
                         try {
-                            val body =
-                                if (call.request.headers.isJson()) {
+                            val body = when {
+                                call.request.headers.isJson() -> {
                                     val text = call.receiveText().replace("\\u0001", "")
-                                    text.deserialized().getOrNull()
-                                } else null
+                                    Body.Json(text.deserialized().getOrThrow())
+                                }
+
+                                call.request.headers.isText() -> {
+                                    val text = call.receiveText()
+                                    Body.Text(text)
+                                }
+
+                                else -> {
+                                    Body.Raw(call.receiveChannel().toByteArray())
+                                }
+                            }
 
                             val interceptedRequest = proxyInterceptor.onRequest(
                                 requestCreator(
@@ -79,25 +86,35 @@ class HttpProxy(
                                 )
                             )
 
-                            //Hide original Host
                             val response = client.request(url) {
                                 method = interceptedRequest.method
                                 this.headers.appendAll(interceptedRequest.headers)
-                                if (interceptedRequest.data != null) setBody(interceptedRequest.data!!.serialized())
-                                else if (interceptedRequest.headers.isJson() && interceptedRequest.data == null) Unit
-                                else setBody(call.receiveChannel().toByteArray())
+                                when (val body = interceptedRequest.body) {
+                                    is Body.Json -> setBody(body.data.serialized())
+                                    is Body.Raw -> setBody(body.data)
+                                    is Body.Text -> setBody(body.data)
+                                }
                             }
 
-                            val json =
-                                if (response.headers.isJson()) {
+                            val responseBody = when {
+                                response.headers.isJson() -> {
+                                    val text = response.bodyAsText().replace("\\u0001", "")
+                                    Body.Json(text.deserialized().getOrThrow())
+                                }
+
+                                response.headers.isText() -> {
                                     val text = response.bodyAsText()
-                                    text.deserialized().getOrNull()
-                                } else null
+                                    Body.Text(text)
+                                }
+
+                                else -> {
+                                    Body.Raw(response.bodyAsChannel().toByteArray())
+                                }
+                            }
 
                             val interceptedResponse = proxyInterceptor.onResponse(
                                 responseCreator(
-                                    port,
-                                    json,
+                                    responseBody,
                                     url,
                                     response.headers,
                                     call.request.httpMethod,
@@ -110,25 +127,23 @@ class HttpProxy(
                                     call.response.headers.append(s, it)
                                 }
                             }
-                            
-                            if (interceptedResponse.data == null) {
-                                call.respondOutputStream(
-                                    status = interceptedResponse.statusCode ?: HttpStatusCode.OK
-                                ) {
-                                    response.bodyAsChannel().copyTo(this)
-                                }
-                            } else if (interceptedResponse.headers["Content-Encoding"].equals("gzip", true)) {
+
+                            val byteArrayBody = when (val body = interceptedResponse.body) {
+                                is Body.Json -> body.data.serialized().toByteArray()
+                                is Body.Raw -> body.data
+                                is Body.Text -> body.data.toByteArray()
+                            }
+
+                            if (interceptedResponse.headers.isGzip()) {
                                 call.respondBytes(
                                     status = interceptedResponse.statusCode ?: HttpStatusCode.OK
-                                ) {
-                                    interceptedResponse.data!!.serialized().gzip()
-                                }
+                                ) { byteArrayBody.gzipArray() }
                             } else {
-                                call.respondText(
-                                    text = interceptedResponse.data!!.serialized(),
+                                call.respondBytes(
                                     status = interceptedResponse.statusCode ?: HttpStatusCode.OK
-                                )
+                                ) { byteArrayBody }
                             }
+
                         } catch (ex: Throwable) {
                             println(ex)
                             println(url)

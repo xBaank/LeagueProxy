@@ -1,12 +1,15 @@
 package proxies.interceptors
 
 import io.ktor.http.*
+import proxies.HttpProxy
+import proxies.RmsProxy
+import proxies.XmppProxy
 import rtmp.amf0.Amf0Node
 import simpleJson.JsonNode
 
 sealed interface Call {
     sealed interface HttpCall : Call {
-        var data: JsonNode?
+        val body: Body
         val url: String
         var headers: Headers
         val method: HttpMethod
@@ -30,7 +33,7 @@ sealed interface Call {
     sealed interface ConfigCall : HttpCall {
 
         data class ConfigRequest(
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
@@ -38,18 +41,24 @@ sealed interface Call {
         ) : ConfigCall
 
         data class ConfigResponse(
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
             override var statusCode: HttpStatusCode?,
+            val xmppProxies: Map<String, XmppProxy>,
+            val rmsProxies: Set<RmsProxy>,
+            val redEdgeProxies: Set<HttpProxy>,
+            val riotAuthProxy: HttpProxy,
+            val riotAuthenticateProxy: HttpProxy,
+            val rioEntitlementAuthProxy: HttpProxy,
+            val riotAffinityServer: HttpProxy,
         ) : ConfigCall
     }
 
     sealed interface RedEdgeCall : HttpCall {
         data class RedEdgeResponse(
-            val port: Int,
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
@@ -57,7 +66,7 @@ sealed interface Call {
         ) : RedEdgeCall
 
         data class RedEdgeRequest(
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
@@ -68,7 +77,7 @@ sealed interface Call {
     sealed interface RiotAuthCall : HttpCall {
         data class RiotAuthResponse(
             val port: Int,
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
@@ -76,7 +85,7 @@ sealed interface Call {
         ) : RiotAuthCall
 
         data class RiotAuthRequest(
-            override var data: JsonNode?,
+            override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,

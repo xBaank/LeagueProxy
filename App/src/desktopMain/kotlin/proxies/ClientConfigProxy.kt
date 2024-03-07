@@ -1,3 +1,4 @@
+/*
 package proxies
 
 import arrow.core.getOrElse
@@ -13,6 +14,7 @@ import io.ktor.server.netty.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import proxies.interceptors.Body
 import proxies.interceptors.Call
 import proxies.interceptors.Call.ConfigCall.ConfigRequest
 import proxies.interceptors.Call.ConfigCall.ConfigResponse
@@ -21,7 +23,7 @@ import proxies.utils.findFreePort
 import simpleJson.*
 
 //TODO use systemyaml url
-private const val configUrl = "https://clientconfig.rpg.riotgames.com"
+internal const val configUrl = "https://clientconfig.rpg.riotgames.com"
 
 class ClientConfigProxy(
     private val configProxyInterceptor: HttpProxyInterceptor,
@@ -60,7 +62,7 @@ class ClientConfigProxy(
                             val response = client.request(url) {
                                 method = interceptedRequest.method
                                 this.headers.appendAll(interceptedRequest.headers)
-                                if (interceptedRequest.data != null) setBody(interceptedRequest.data!!.serialized())
+                                if (interceptedRequest.body != null) setBody(interceptedRequest.body!!.serialized())
                             }
 
                             val responseBytes = response.bodyAsText()
@@ -77,7 +79,7 @@ class ClientConfigProxy(
                             )
 
                             call.respondText(
-                                interceptedResponse.data?.serialized() ?: "",
+                                interceptedResponse.body?.serialized() ?: "",
                                 response.contentType(),
                                 response.status
                             )
@@ -96,7 +98,12 @@ class ClientConfigProxy(
     private suspend fun onConfigResponse(
         value: Call.HttpCall,
     ): Call.HttpCall {
-        val json = value.data ?: return configProxyInterceptor.onResponse(value)
+        val body = value.body
+        if (body is Body.Text || body is Body.Raw) {
+            return configProxyInterceptor.onResponse(value)
+        }
+
+        val json = (value.body as Body.Json).data
 
         if (json["rms.affinities"].isRight()) {
             json["rms.affinities"].asObject().getOrNull()?.forEach { key, _ ->
@@ -150,11 +157,10 @@ class ClientConfigProxy(
             }
         }
 
-        value.data = json
         return configProxyInterceptor.onResponse(value)
     }
 
     override fun close() {
         server?.stop(50, 50)
     }
-}
+}*/

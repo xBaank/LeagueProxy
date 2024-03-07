@@ -3,7 +3,7 @@ package proxies.interceptors
 import simpleJson.JsonNode
 
 sealed interface Body {
-    data class Json(val data: JsonNode)
-    data class Text(val data: String)
-    class Raw(val data: ByteArray)
+    data class Json(var data: JsonNode) : Body
+    data class Text(var data: String) : Body
+    class Raw(var data: ByteArray) : Body
 }
