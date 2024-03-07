@@ -10,7 +10,7 @@ import proxies.interceptors.Call.HttpCall
 import proxies.interceptors.Call.RiotAuthCall.RiotAuthResponse
 import simpleJson.*
 
-class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
+class HttpProxyInterceptor : ProxyInterceptor<HttpCall, HttpCall> {
     val calls: MutableSharedFlow<HttpCall> = MutableSharedFlow()
 
     private fun fixRiotAuth(value: RiotAuthResponse) {
@@ -25,7 +25,6 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
         value.headers = value.headers.toMap().mapNotNull {
             if (it.key.equals("Host", true)) null
             else if (it.key.equals("Content-Length", true)) null
-            else if (it.key.equals("Transfer-Encoding", true)) null
             else it.key to it.value
         }.let {
             headers {
@@ -69,11 +68,6 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
 
         if (json["keystone.entitlements.url"].isRight()) {
             json["keystone.entitlements.url"] = "http://127.0.0.1:${response.rioEntitlementAuthProxy.port}"
-        }
-
-        if (json["lol.client_settings.player_platform_edge.url"].isRight()) {
-            json["lol.client_settings.player_platform_edge.url"] =
-                "http://127.0.0.1:${response.riotPlatformEdgeProxy.port}"
         }
 
         if (json["lol.client_settings.league_edge.url"].isRight()) {

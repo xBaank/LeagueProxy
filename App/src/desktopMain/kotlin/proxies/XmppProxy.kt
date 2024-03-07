@@ -7,11 +7,11 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import proxies.interceptors.Call.XmppCall
-import proxies.interceptors.IProxyInterceptor
+import proxies.interceptors.ProxyInterceptor
 import kotlin.coroutines.cancellation.CancellationException
 
 
-fun XmppProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<String, XmppCall>): XmppProxy {
+fun XmppProxy(host: String, port: Int, proxyEventHandler: ProxyInterceptor<String, XmppCall>): XmppProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -22,7 +22,7 @@ class XmppProxy internal constructor(
     val serverSocket: ServerSocket,
     override val url: String,
     override val port: Int,
-    private val proxyEventHandler: IProxyInterceptor<String, XmppCall>,
+    private val proxyEventHandler: ProxyInterceptor<String, XmppCall>,
 ) : Proxy {
     override val started: CompletableJob = Job()
 

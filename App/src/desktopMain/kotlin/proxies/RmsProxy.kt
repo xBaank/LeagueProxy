@@ -14,7 +14,7 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import proxies.interceptors.Call
-import proxies.interceptors.IProxyInterceptor
+import proxies.interceptors.ProxyInterceptor
 import proxies.utils.findFreePort
 import proxies.utils.gzipArray
 import proxies.utils.ungzip
@@ -25,7 +25,7 @@ import java.time.Duration
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
 
 
-class RmsProxy(override val url: String, private val proxyEventHandler: IProxyInterceptor<JsonNode, Call.RmsCall>) :
+class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInterceptor<JsonNode, Call.RmsCall>) :
     Proxy {
     override val port: Int = findFreePort()
     override val started: CompletableJob = Job()

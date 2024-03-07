@@ -17,5 +17,5 @@ suspend fun isRiotClientRunning(): Boolean {
 }
 
 suspend fun killRiotClient() {
-    process("taskkill", "/IM", "RiotClientServices.exe")
+    process("taskkill", "/F", "/IM", "RiotClientServices.exe")
 }

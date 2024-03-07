@@ -52,7 +52,6 @@ sealed interface Call {
             val riotAuthProxy: HttpProxy,
             val riotAuthenticateProxy: HttpProxy,
             val rioEntitlementAuthProxy: HttpProxy,
-            val riotPlatformEdgeProxy: HttpProxy,
             val riotAffinityServer: HttpProxy,
         ) : ConfigCall
     }

@@ -8,3 +8,4 @@ fun Headers.isGzip() = this[HttpHeaders.ContentEncoding].equals("gzip", true)
 fun Headers.isText() = this[HttpHeaders.ContentType]?.contains("application/jwt") == true
         || this[HttpHeaders.ContentType]?.contains("application/xml") == true
         || this[HttpHeaders.ContentType]?.contains("text/plain") == true
+        || this[HttpHeaders.ContentType]?.contains("application/x-www-form-urlencoded") == true

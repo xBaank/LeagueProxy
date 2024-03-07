@@ -11,7 +11,6 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -52,14 +51,7 @@ class HttpProxy(
     override val started: CompletableJob = Job()
 
     override suspend fun start() {
-        val server = embeddedServer(Netty, port = port, configure = { tcpKeepAlive = true }) {
-            install(CORS) {
-                anyHost()
-                allowHeaders { true }
-                HttpMethod.DefaultMethods.forEach { allowMethod(it) }
-                allowCredentials = true
-                allowHeader("access-control-expose-headers")
-            }
+        val server = embeddedServer(Netty, port = port) {
             routing {
                 route("{...}") {
                     handle {
@@ -132,7 +124,7 @@ class HttpProxy(
 
                             interceptedResponse.headers.forEach { s, strings ->
                                 strings.forEach {
-                                    call.response.headers.append(s, it)
+                                    call.response.headers.append(s, it, safeOnly = false)
                                 }
                             }
 

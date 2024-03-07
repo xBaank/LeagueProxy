@@ -5,7 +5,7 @@ import proxies.interceptors.Call.RmsCall.RmsRequest
 import proxies.interceptors.Call.RmsCall.RmsResponse
 import simpleJson.JsonNode
 
-class RmsProxyInterceptor : IProxyInterceptor<JsonNode, Call.RmsCall> {
+class RmsProxyInterceptor : ProxyInterceptor<JsonNode, Call.RmsCall> {
     val calls: MutableSharedFlow<Call.RmsCall> = MutableSharedFlow()
 
     override suspend fun onRequest(value: JsonNode): Call.RmsCall {

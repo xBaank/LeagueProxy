@@ -12,7 +12,7 @@ import simpleJson.get
 import simpleJson.serialized
 import simpleJson.set
 
-class RtmpProxyInterceptor : IProxyInterceptor<List<Amf0Node>, RtmpCall> {
+class RtmpProxyInterceptor : ProxyInterceptor<List<Amf0Node>, RtmpCall> {
     val calls: MutableSharedFlow<RtmpCall> = MutableSharedFlow()
 
     override suspend fun onRequest(value: List<Amf0Node>): RtmpCall {

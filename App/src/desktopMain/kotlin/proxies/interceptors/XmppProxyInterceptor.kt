@@ -5,7 +5,7 @@ import proxies.interceptors.Call.XmppCall
 import proxies.interceptors.Call.XmppCall.XmppRequest
 import proxies.interceptors.Call.XmppCall.XmppResponse
 
-class XmppProxyInterceptor : IProxyInterceptor<String, XmppCall> {
+class XmppProxyInterceptor : ProxyInterceptor<String, XmppCall> {
     val calls: MutableSharedFlow<XmppCall> = MutableSharedFlow()
 
     override suspend fun onRequest(value: String): XmppCall {

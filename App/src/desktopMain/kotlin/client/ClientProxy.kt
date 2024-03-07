@@ -4,10 +4,7 @@ import com.github.pgreze.process.process
 import extensions.inject
 import extensions.port
 import io.ktor.http.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
 import proxies.*
 import proxies.interceptors.*
@@ -136,8 +133,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
                     rioAuthProxy,
                     rioAuthenticateProxy,
                     rioEntitlementAuthProxy,
-                    rioAffinityProxy,
-                    riotPlatformEdgeProxy
+                    rioAffinityProxy
                 )
             }
 
@@ -150,7 +146,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     systemYamlPatcher.patchSystemYaml(lcdsHosts)
 
     val proxies =
-        xmppProxies.values + rtmpProxies.values + rmsProxies + redEdgeProxies + riotPlatformEdgeProxy + rioAuthProxy + rioEntitlementAuthProxy + rioAffinityProxy + rioAuthenticateProxy
+        xmppProxies.values + rtmpProxies.values + rmsProxies + redEdgeProxies + rioAuthProxy + rioEntitlementAuthProxy + rioAffinityProxy + rioAuthenticateProxy
 
     return ClientProxy(
         systemYamlPatcher = systemYamlPatcher,
@@ -195,7 +191,7 @@ class ClientProxy internal constructor(
 
     override fun close() {
         systemYamlPatcher.close()
-        proxies.forEach(Proxy::close)
+        runBlocking { proxies.map { launch { it.close() } }.joinAll() }
         clientConfigProxy.close()
         onClientClose()
     }

@@ -8,13 +8,13 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import proxies.interceptors.Call.RtmpCall
-import proxies.interceptors.IProxyInterceptor
+import proxies.interceptors.ProxyInterceptor
 import rtmp.Amf0MessagesHandler
 import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
 
 
-fun RtmpProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
+fun RtmpProxy(host: String, port: Int, proxyEventHandler: ProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -25,7 +25,7 @@ class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     override val url: String,
     override val port: Int,
-    private val interceptor: IProxyInterceptor<List<Amf0Node>, RtmpCall>,
+    private val interceptor: ProxyInterceptor<List<Amf0Node>, RtmpCall>,
 ) : Proxy {
     override val started: CompletableJob = Job()
 
