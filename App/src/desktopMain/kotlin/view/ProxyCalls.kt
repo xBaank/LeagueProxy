@@ -388,10 +388,8 @@ fun Sequence<Call>.filterBySelection(list: List<String>) = filter {
 fun Sequence<Call>.filterByText(text: String) = filter {
     if (text.trim().isBlank()) return@filter true
     when (it) {
-        is HttpCall -> it.body.serializedPrettyMemoCutted().contains(text, true) || it.url.contains(
-            text,
-            true
-        )
+        is HttpCall -> it.body.serializedPrettyMemoCutted().contains(text, true)
+                || it.url.contains(text, true)
 
         is RtmpCall -> it.data.serializedMemo().contains(text, true)
         is XmppCall -> it.data.contains(text, true)

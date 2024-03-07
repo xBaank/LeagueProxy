@@ -20,15 +20,18 @@ fun XmppProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<Stri
 
 class XmppProxy internal constructor(
     val serverSocket: ServerSocket,
-    val host: String,
-    val port: Int,
+    override val url: String,
+    override val port: Int,
     private val proxyEventHandler: IProxyInterceptor<String, XmppCall>,
-) {
+) : Proxy {
+    override val started: CompletableJob = Job()
 
-    suspend fun start() = coroutineScope {
+    override suspend fun start() = coroutineScope {
         while (isActive) {
-            val socket = serverSocket.accept()
-            println("Accepted xmpp connection from ${socket.remoteAddress} in ${socket.localAddress}")
+            val socketJob = async { serverSocket.accept() }
+            started.complete()
+            val socket = socketJob.await()
+            println("Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}")
             launch(Dispatchers.IO) { handle(socket) }
         }
     }
@@ -47,7 +50,7 @@ class XmppProxy internal constructor(
 
     private suspend fun handleSocket(socket: Socket) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
-        val clientSocket = aSocket(selectorManager).tcp().connect(host, port).tls(Dispatchers.IO)
+        val clientSocket = aSocket(selectorManager).tcp().connect(url, port).tls(Dispatchers.IO)
 
         val serverReadChannel = socket.openReadChannel()
         val serverWriteChannel = socket.openWriteChannel(autoFlush = true)
@@ -92,4 +95,9 @@ class XmppProxy internal constructor(
             }
         }
     }
+
+    override fun close() {
+        serverSocket.close()
+    }
+
 }

@@ -12,9 +12,7 @@ import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import proxies.interceptors.Call
 import proxies.interceptors.IProxyInterceptor
 import proxies.utils.findFreePort
@@ -27,12 +25,13 @@ import java.time.Duration
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
 
 
-class RmsProxy(val url: String, private val proxyEventHandler: IProxyInterceptor<JsonNode, Call.RmsCall>) :
-    AutoCloseable {
-    val port: Int = findFreePort()
+class RmsProxy(override val url: String, private val proxyEventHandler: IProxyInterceptor<JsonNode, Call.RmsCall>) :
+    Proxy {
+    override val port: Int = findFreePort()
+    override val started: CompletableJob = Job()
     private var server: NettyApplicationEngine? = null
 
-    fun start() {
+    override suspend fun start() {
         val server = embeddedServer(Netty, port = port) {
             install(WebSockets) {
                 pingPeriod = Duration.ofSeconds(60)
@@ -118,6 +117,7 @@ class RmsProxy(val url: String, private val proxyEventHandler: IProxyInterceptor
         }.start(wait = false)
 
         this.server = server
+        started.complete()
     }
 
     override fun close() {

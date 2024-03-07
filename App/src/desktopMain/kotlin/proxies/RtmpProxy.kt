@@ -4,12 +4,9 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.network.tls.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import proxies.interceptors.Call.RtmpCall
 import proxies.interceptors.IProxyInterceptor
 import rtmp.Amf0MessagesHandler
@@ -26,13 +23,17 @@ fun RtmpProxy(host: String, port: Int, proxyEventHandler: IProxyInterceptor<List
 
 class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
-    val host: String,
-    val port: Int,
+    override val url: String,
+    override val port: Int,
     private val interceptor: IProxyInterceptor<List<Amf0Node>, RtmpCall>,
-) {
-    suspend fun start() = coroutineScope {
+) : Proxy {
+    override val started: CompletableJob = Job()
+
+    override suspend fun start() = coroutineScope {
         while (isActive) {
-            val socket = serverSocket.accept()
+            val socketJob = async { serverSocket.accept() }
+            started.complete()
+            val socket = socketJob.await()
             println("Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}")
             launch(Dispatchers.IO) { handle(socket) }
         }
@@ -52,7 +53,7 @@ class RtmpProxy internal constructor(
 
     private suspend fun handleSocket(socket: Socket) = coroutineScope {
         val selectorManager = SelectorManager(Dispatchers.IO)
-        val clientSocket = aSocket(selectorManager).tcp().connect(host, port).tls(Dispatchers.IO)
+        val clientSocket = aSocket(selectorManager).tcp().connect(url, port).tls(Dispatchers.IO)
 
         val serverReadChannel = socket.openReadChannel()
         val serverWriteChannel = socket.openWriteChannel(autoFlush = true)
@@ -114,5 +115,9 @@ class RtmpProxy internal constructor(
         val c1Echo = ByteArray(1536)
         serverReadChannel.readFully(c1Echo, 0, c1Echo.size)
         clientWriteChannel.writeFully(c1Echo, 0, c1Echo.size)
+    }
+
+    override fun close() {
+        serverSocket.close()
     }
 }

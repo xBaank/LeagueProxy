@@ -71,6 +71,11 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
             json["keystone.entitlements.url"] = "http://127.0.0.1:${response.rioEntitlementAuthProxy.port}"
         }
 
+        if (json["lol.client_settings.player_platform_edge.url"].isRight()) {
+            json["lol.client_settings.player_platform_edge.url"] =
+                "http://127.0.0.1:${response.riotPlatformEdgeProxy.port}"
+        }
+
         if (json["lol.client_settings.league_edge.url"].isRight()) {
             val value = json["lol.client_settings.league_edge.url"].asString().getOrNull()
             val proxy = response.redEdgeProxies.firstOrNull { it.url == value }
@@ -81,7 +86,7 @@ class HttpProxyInterceptor : IProxyInterceptor<HttpCall, HttpCall> {
 
         if (json["chat.host"].isRight()) {
             val chatHost = json["chat.host"].asString().getOrThrow()
-            val xmppHost = response.xmppProxies.values.first { it.host == chatHost }
+            val xmppHost = response.xmppProxies.values.first { it.url == chatHost }
             json["chat.host"] = "127.0.0.1"
 
             if (json["chat.port"].isRight()) {

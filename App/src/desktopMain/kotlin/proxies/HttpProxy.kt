@@ -1,6 +1,9 @@
 package proxies
 
-import extensions.*
+import extensions.inject
+import extensions.isGzip
+import extensions.isJson
+import extensions.isText
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -13,6 +16,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
+import kotlinx.coroutines.CompletableJob
+import kotlinx.coroutines.Job
 import proxies.interceptors.Body
 import proxies.interceptors.Call.HttpCall
 import proxies.interceptors.HttpProxyInterceptor
@@ -23,7 +28,7 @@ import simpleJson.serialized
 
 
 class HttpProxy(
-    val url: String,
+    override val url: String,
     val proxyInterceptor: HttpProxyInterceptor,
     val requestCreator: (
         data: Body,
@@ -39,13 +44,14 @@ class HttpProxy(
         method: HttpMethod,
         status: HttpStatusCode?,
     ) -> HttpCall,
-    val port: Int = findFreePort(),
-) : AutoCloseable {
+    override val port: Int = findFreePort(),
+) : Proxy {
 
     val client by inject<HttpClient>()
     private var server: NettyApplicationEngine? = null
+    override val started: CompletableJob = Job()
 
-    fun start() {
+    override suspend fun start() {
         val server = embeddedServer(Netty, port = port, configure = { tcpKeepAlive = true }) {
             install(CORS) {
                 anyHost()
@@ -63,7 +69,8 @@ class HttpProxy(
                             val body = when {
                                 call.request.headers.isJson() -> {
                                     val text = call.receiveText().replace("\\u0001", "")
-                                    Body.Json(text.deserialized().getOrThrow())
+                                    val json = text.deserialized().getOrNull()
+                                    if (json != null) Body.Json(json) else Body.Text(text)
                                 }
 
                                 call.request.headers.isText() -> {
@@ -99,7 +106,8 @@ class HttpProxy(
                             val responseBody = when {
                                 response.headers.isJson() -> {
                                     val text = response.bodyAsText().replace("\\u0001", "")
-                                    Body.Json(text.deserialized().getOrThrow())
+                                    val json = text.deserialized().getOrNull()
+                                    if (json != null) Body.Json(json) else Body.Text(text)
                                 }
 
                                 response.headers.isText() -> {
@@ -155,6 +163,7 @@ class HttpProxy(
         }.start(wait = false)
 
         this.server = server
+        started.complete()
     }
 
     override fun close() {
