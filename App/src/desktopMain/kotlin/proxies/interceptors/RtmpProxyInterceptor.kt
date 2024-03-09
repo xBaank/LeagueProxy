@@ -7,10 +7,7 @@ import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.utils.base64Ungzip
 import proxies.utils.gzipBase64
 import rtmp.amf0.*
-import simpleJson.deserialized
-import simpleJson.get
-import simpleJson.serialized
-import simpleJson.set
+import simpleJson.*
 
 class RtmpProxyInterceptor : ProxyInterceptor<List<Amf0Node>, RtmpCall> {
     val calls: MutableSharedFlow<RtmpCall> = MutableSharedFlow()

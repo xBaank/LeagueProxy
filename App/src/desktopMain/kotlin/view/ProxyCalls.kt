@@ -20,6 +20,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.Cog
 import extensions.*
 import io.ktor.util.*
 import org.koin.compose.koinInject
@@ -41,9 +44,8 @@ import proxies.utils.Amf0PrettyBuilder
 
 
 @Composable
-fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
+fun ProxyCalls(isSettings: MutableState<Boolean>, items: SnapshotStateList<Call>) {
     var searchText by remember { mutableStateOf("") }
-    val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
     val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS", "RED EDGE", "RIOT AUTH")
     val selectedItems = remember { mutableStateOf(dropDownItems.toList()) }
     val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
@@ -65,20 +67,6 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
 
     LaunchedEffect(Unit) {
         httpProxyInterceptor.calls.collect(items::add)
-    }
-
-    if (items.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Waiting for League Of Legends client to open..."
-            )
-        }
-        return
     }
 
     Column {
@@ -104,12 +92,42 @@ fun ProxyCalls(isDarkColors: MutableState<Boolean>) {
                 MultiSelectDropdown(dropDownItems, selectedItems)
             }
 
-            Switch(
-                checked = isDarkColors.value,
-                onCheckedChange = { isDarkColors.value = it },
-                modifier = Modifier.padding(16.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .padding(16.dp),
+            ) {
+
+                IconButton(
+                    onClick = { isSettings.value = true },
+                    modifier = Modifier
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .width(48.dp)
+                        .height(48.dp)
+                ) {
+                    Icon(
+                        modifier = Modifier.padding(8.dp),
+                        imageVector = FontAwesomeIcons.Solid.Cog,
+                        contentDescription = "Icon"
+                    )
+                }
+            }
+
         }
+
+        if (items.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Waiting for League Of Legends client to open..."
+                )
+            }
+            return
+        }
+
         val lazyColumnSatate = rememberLazyListState()
         LazyColumn(state = lazyColumnSatate, modifier = Modifier.simpleVerticalScrollbar(state = lazyColumnSatate)) {
             itemsIndexed(

@@ -37,25 +37,9 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         proxyClient
     }.toSet()
 
-    val riotPlatformEdgeProxy = run {
-        val host = "https://euc1-red.pp.sgp.pvp.net"
-        val port = findFreePort()
-        val proxyClient = HttpProxy(
-            url = host,
-            port = port,
-            proxyInterceptor = httpProxyInterceptor,
-            requestCreator = ::RiotAuthRequest,
-            responseCreator = { data: Body, url: String, headers: Headers, method: HttpMethod, status: HttpStatusCode? ->
-                RiotAuthResponse(port, data, url, headers, method, status)
-            })
-        proxyClient
-    }
-
     val rioAuthenticateProxy = run {
-        val host = "https://authenticate.riotgames.com"
         val port = findFreePort()
         val proxyClient = HttpProxy(
-            url = host,
             port = port,
             proxyInterceptor = httpProxyInterceptor,
             requestCreator = ::RiotAuthRequest,
@@ -66,10 +50,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     }
 
     val rioAuthProxy = run {
-        val host = "https://auth.riotgames.com"
         val port = findFreePort()
         val proxyClient = HttpProxy(
-            url = host,
             port = port,
             proxyInterceptor = httpProxyInterceptor,
             requestCreator = ::RiotAuthRequest,
@@ -81,10 +63,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     }
 
     val rioAffinityProxy = run {
-        val host = "https://riot-geo.pas.si.riotgames.com"
         val port = findFreePort()
         val proxyClient = HttpProxy(
-            url = host,
             port = port,
             proxyInterceptor = httpProxyInterceptor,
             requestCreator = ::RiotAuthRequest,
@@ -96,10 +76,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     }
 
     val rioEntitlementAuthProxy = run {
-        val host = "https://entitlements.auth.riotgames.com/api/token/v1"
         val port = findFreePort()
         val proxyClient = HttpProxy(
-            url = host,
             port = port,
             proxyInterceptor = httpProxyInterceptor,
             requestCreator = ::RiotAuthRequest,
@@ -111,7 +89,6 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
 
     val xmppProxies = systemYamlPatcher.xmppHostsByRegion.map { (region, chat) ->
         val proxyClient = XmppProxy(chat.host, chat.port, xmppProxyInterceptor)
-        val port = proxyClient.serverSocket.localAddress.port
         region to proxyClient
     }.toMap()
 
@@ -166,7 +143,6 @@ class ClientProxy internal constructor(
     suspend fun startProxies() = coroutineScope {
         proxies.forEach {
             launch {
-                println("Started proxy for ${it.url} on port ${it.port}")
                 it.start()
             }
         }

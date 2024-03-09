@@ -54,19 +54,25 @@ class HttpProxyInterceptor : ProxyInterceptor<HttpCall, HttpCall> {
         }
 
         if (json["keystone.rso-authenticator.service_url"].isRight()) {
+            response.riotAuthenticateProxy.url = json["keystone.rso-authenticator.service_url"].asString().getOrThrow()
             json["keystone.rso-authenticator.service_url"] = "http://127.0.0.1:${response.riotAuthenticateProxy.port}"
         }
 
         if (json["keystone.rso_auth.url"].isRight()) {
+            response.riotAuthProxy.url = json["keystone.rso_auth.url"].asString().getOrThrow()
             json["keystone.rso_auth.url"] = "http://127.0.0.1:${response.riotAuthProxy.port}"
+            json["keystone.rso_auth.use_new_login_api"] = false
         }
 
         if (json["keystone.player-affinity.playerAffinityServiceURL"].isRight()) {
+            response.riotAffinityServer.url =
+                json["keystone.player-affinity.playerAffinityServiceURL"].asString().getOrThrow()
             json["keystone.player-affinity.playerAffinityServiceURL"] =
                 "http://127.0.0.1:${response.riotAffinityServer.port}"
         }
 
         if (json["keystone.entitlements.url"].isRight()) {
+            response.rioEntitlementAuthProxy.url = json["keystone.entitlements.url"].asString().getOrThrow()
             json["keystone.entitlements.url"] = "http://127.0.0.1:${response.rioEntitlementAuthProxy.port}"
         }
 
@@ -100,6 +106,20 @@ class HttpProxyInterceptor : ProxyInterceptor<HttpCall, HttpCall> {
 
     override suspend fun onRequest(value: HttpCall): HttpCall {
         fixHeaders(value)
+
+        /* eval(
+             """
+             import rtmp.amf0.*
+             import simpleJson.*
+             import proxies.interceptors.Call.*
+
+             fun processData(input: HttpCall): String {
+                 return input.toString()
+             }
+             ::processData
+         """.trimIndent(), value
+         )*/
+
         calls.emit(value)
         return value
     }

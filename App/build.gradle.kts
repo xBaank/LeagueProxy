@@ -7,6 +7,7 @@ plugins {
 
 val ktor_version: String by project
 val kotlinProcessVersion: String by project
+val kotlin_version: String by project
 
 kotlin {
     jvm("desktop")
@@ -34,6 +35,11 @@ kotlin {
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")
             implementation("ru.gildor.coroutines:kotlin-coroutines-okhttp:1.0")
+            implementation("br.com.devsrsouza.compose.icons:font-awesome:1.1.0")
+            // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-scripting-common
+            implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
             // https://mvnrepository.com/artifact/org.yaml/snakeyaml
             implementation("org.yaml:snakeyaml:2.0")
             implementation("com.squareup.okio:okio:3.3.0")

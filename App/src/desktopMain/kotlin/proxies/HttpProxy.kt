@@ -25,30 +25,48 @@ import proxies.utils.gzipArray
 import simpleJson.deserialized
 import simpleJson.serialized
 
+typealias RequestCreator = (
+    data: Body,
+    url: String,
+    headers: Headers,
+    method: HttpMethod,
+    status: HttpStatusCode?,
+) -> HttpCall
+
+typealias ResponseCreator = (
+    data: Body,
+    url: String,
+    headers: Headers,
+    method: HttpMethod,
+    status: HttpStatusCode?,
+) -> HttpCall
 
 class HttpProxy(
-    override val url: String,
     val proxyInterceptor: HttpProxyInterceptor,
-    val requestCreator: (
-        data: Body,
-        url: String,
-        headers: Headers,
-        method: HttpMethod,
-        status: HttpStatusCode?,
-    ) -> HttpCall,
-    val responseCreator: (
-        data: Body,
-        url: String,
-        headers: Headers,
-        method: HttpMethod,
-        status: HttpStatusCode?,
-    ) -> HttpCall,
+    val requestCreator: RequestCreator,
+    val responseCreator: ResponseCreator,
     override val port: Int = findFreePort(),
 ) : Proxy {
 
-    val client by inject<HttpClient>()
-    private var server: ApplicationEngine? = null
+    constructor(
+        url: String,
+        proxyInterceptor: HttpProxyInterceptor,
+        requestCreator: RequestCreator,
+        responseCreator: ResponseCreator,
+        port: Int = findFreePort(),
+    ) : this(
+        proxyInterceptor = proxyInterceptor,
+        requestCreator = requestCreator,
+        responseCreator = responseCreator,
+        port = port
+    ) {
+        this.url = url
+    }
+
+    override lateinit var url: String
     override val started: CompletableJob = Job()
+    private val client by inject<HttpClient>()
+    private var server: ApplicationEngine? = null
 
     override suspend fun start() {
         val server = embeddedServer(CIO, port = port) {

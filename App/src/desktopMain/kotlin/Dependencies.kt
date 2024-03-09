@@ -10,6 +10,7 @@ import proxies.interceptors.HttpProxyInterceptor
 import proxies.interceptors.RmsProxyInterceptor
 import proxies.interceptors.RtmpProxyInterceptor
 import proxies.interceptors.XmppProxyInterceptor
+import view.SettingsManager
 
 val module = module {
     single {
@@ -31,4 +32,5 @@ val module = module {
     singleOf(::RmsProxyInterceptor)
     singleOf(::HttpProxyInterceptor)
     singleOf(::SystemYamlPatcher)
+    singleOf(::SettingsManager)
 }
