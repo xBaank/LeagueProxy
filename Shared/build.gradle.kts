@@ -1,6 +1,5 @@
 plugins {
     kotlin("multiplatform") version "1.9.22"
-    id("maven-publish")
 }
 val ktor_version: String by project
 val kotlinProcessVersion: String by project
@@ -8,17 +7,6 @@ val kotlin_version: String by project
 
 repositories {
     mavenCentral()
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            withType<MavenPublication> {
-                groupId = group.toString()
-                artifactId = "Shared"
-            }
-        }
-    }
 }
 
 kotlin {
