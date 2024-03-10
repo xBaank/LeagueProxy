@@ -1,4 +1,4 @@
-package shared.proxies.scripting
+package scripting
 
 import kotlin.script.experimental.annotations.KotlinScript
 

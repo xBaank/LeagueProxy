@@ -1,4 +1,4 @@
-package shared.proxies.scripting
+package scripting
 
 import java.io.File
 import kotlin.script.experimental.api.*

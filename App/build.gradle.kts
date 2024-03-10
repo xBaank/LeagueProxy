@@ -3,11 +3,11 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.jetbrainsCompose)
-    id("maven-publish")
 }
 
 val ktor_version: String by project
 val kotlinProcessVersion: String by project
+val kotlin_version: String by project
 
 kotlin {
     jvm("desktop")
@@ -21,7 +21,9 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.material3)
-
+            implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
             implementation("io.github.reactivecircus.cache4k:cache4k:0.13.0")
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")

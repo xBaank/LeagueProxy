@@ -108,20 +108,6 @@ class HttpProxyInterceptor : ProxyInterceptor<HttpCall, HttpCall> {
 
     override suspend fun onRequest(value: HttpCall): HttpCall {
         fixHeaders(value)
-
-        /* eval(
-             """
-             import rtmp.amf0.*
-             import simpleJson.*
-             import shared.Call.*
-
-             fun processData(input: HttpCall): String {
-                 return input.toString()
-             }
-             ::processData
-         """.trimIndent(), value
-         )*/
-
         calls.emit(value)
         return value
     }
