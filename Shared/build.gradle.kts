@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.9.23"
+    kotlin("multiplatform") version "1.9.22"
     id("maven-publish") apply true
 }
 val ktor_version: String by project
