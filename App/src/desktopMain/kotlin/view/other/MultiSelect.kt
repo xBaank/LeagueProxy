@@ -1,4 +1,4 @@
-package view
+package view.other
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -13,12 +13,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -35,7 +37,8 @@ fun MultiSelectDropdown(
         modifier = Modifier
             .size(250.dp, 32.dp)
             .clip(RoundedCornerShape(4.dp))
-            .border(BorderStroke(1.dp, Color.LightGray), RoundedCornerShape(4.dp))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary), RoundedCornerShape(4.dp))
+            .pointerHoverIcon(PointerIcon.Hand)
             .clickable { expanded = !expanded },
     ) {
         Text(
@@ -54,8 +57,8 @@ fun MultiSelectDropdown(
             items.forEach { selectionOption ->
                 DropdownMenuItem(
                     modifier = Modifier.then(
-                        if (selectedItems.value.contains(selectionOption)) Modifier.background(Color.Gray) else Modifier
-                    ),
+                        if (!selectedItems.value.contains(selectionOption)) Modifier.background(MaterialTheme.colorScheme.background) else Modifier
+                    ).pointerHoverIcon(PointerIcon.Hand),
                     onClick = {
                         if (selectedItems.value.contains(selectionOption)) {
                             selectedItems.value -= selectionOption

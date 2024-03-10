@@ -1,4 +1,4 @@
-package view
+package view.other
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween

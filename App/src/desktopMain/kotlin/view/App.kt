@@ -8,8 +8,10 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
 import kotlinx.coroutines.runBlocking
-import proxies.interceptors.Call
+import org.koin.compose.koinInject
+import proxies.interceptors.*
 import proxies.utils.killRiotClient
+import view.other.AlertDialog
 import view.theme.DarkColors
 import view.theme.LightColors
 
@@ -18,6 +20,26 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val isDarkColor = remember { mutableStateOf(true) }
     val isSettings = remember { mutableStateOf(false) }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
+    val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
+    val xmppInterceptor = koinInject<XmppProxyInterceptor>()
+    val rmsInterceptor = koinInject<RmsProxyInterceptor>()
+    val httpProxyInterceptor = koinInject<HttpProxyInterceptor>()
+
+    LaunchedEffect(Unit) {
+        rtmpInterceptor.calls.collect(items::add)
+    }
+
+    LaunchedEffect(Unit) {
+        xmppInterceptor.calls.collect(items::add)
+    }
+
+    LaunchedEffect(Unit) {
+        rmsInterceptor.calls.collect(items::add)
+    }
+
+    LaunchedEffect(Unit) {
+        httpProxyInterceptor.calls.collect(items::add)
+    }
 
 
     MaterialTheme(colorScheme = if (isDarkColor.value) DarkColors else LightColors) {

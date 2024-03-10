@@ -3,9 +3,6 @@ package view
 import androidx.compose.foundation.ContextMenuDataProvider
 import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -25,8 +22,7 @@ import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.Cog
 import extensions.*
 import io.ktor.util.*
-import org.koin.compose.koinInject
-import proxies.interceptors.*
+import proxies.interceptors.Call
 import proxies.interceptors.Call.*
 import proxies.interceptors.Call.ConfigCall.ConfigRequest
 import proxies.interceptors.Call.ConfigCall.ConfigResponse
@@ -41,6 +37,9 @@ import proxies.interceptors.Call.RtmpCall.RtmpResponse
 import proxies.interceptors.Call.XmppCall.XmppRequest
 import proxies.interceptors.Call.XmppCall.XmppResponse
 import proxies.utils.Amf0PrettyBuilder
+import view.other.LazyScrollable
+import view.other.MultiSelectDropdown
+import view.other.TextArea
 
 
 @Composable
@@ -48,26 +47,6 @@ fun ProxyCalls(isSettings: MutableState<Boolean>, items: SnapshotStateList<Call>
     var searchText by remember { mutableStateOf("") }
     val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS", "RED EDGE", "RIOT AUTH")
     val selectedItems = remember { mutableStateOf(dropDownItems.toList()) }
-    val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
-    val xmppInterceptor = koinInject<XmppProxyInterceptor>()
-    val rmsInterceptor = koinInject<RmsProxyInterceptor>()
-    val httpProxyInterceptor = koinInject<HttpProxyInterceptor>()
-
-    LaunchedEffect(Unit) {
-        rtmpInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        xmppInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        rmsInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        httpProxyInterceptor.calls.collect(items::add)
-    }
 
     Column {
         Row(
@@ -128,17 +107,13 @@ fun ProxyCalls(isSettings: MutableState<Boolean>, items: SnapshotStateList<Call>
             return
         }
 
-        val lazyColumnSatate = rememberLazyListState()
-        LazyColumn(state = lazyColumnSatate, modifier = Modifier.simpleVerticalScrollbar(state = lazyColumnSatate)) {
-            itemsIndexed(
-                items.asSequence().filterBySelection(selectedItems.value).filterByText(searchText).toList()
-            ) { index, item ->
-                when (item) {
-                    is HttpCall -> ListItem(headlineContent = { RenderHttpCall(item, index) })
-                    is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
-                    is XmppCall -> ListItem(headlineContent = { RenderXmppCall(item, index) })
-                    is RmsCall -> ListItem(headlineContent = { RenderRmsCall(item, index) })
-                }
+        LazyScrollable(items.asSequence().filterBySelection(selectedItems.value).filterByText(searchText).toList())
+        { index, item ->
+            when (item) {
+                is HttpCall -> ListItem(headlineContent = { RenderHttpCall(item, index) })
+                is RtmpCall -> ListItem(headlineContent = { RenderRtmpCall(item, index) })
+                is XmppCall -> ListItem(headlineContent = { RenderXmppCall(item, index) })
+                is RmsCall -> ListItem(headlineContent = { RenderRmsCall(item, index) })
             }
         }
     }

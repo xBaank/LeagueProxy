@@ -40,6 +40,7 @@ kotlin {
             implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
             implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
             implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
+            implementation("com.darkrockstudios:mpfilepicker:3.1.0")
             // https://mvnrepository.com/artifact/org.yaml/snakeyaml
             implementation("org.yaml:snakeyaml:2.0")
             implementation("com.squareup.okio:okio:3.3.0")
@@ -68,9 +69,13 @@ compose.desktop {
     application {
         mainClass = "MainKt"
 
+        buildTypes.release.proguard {
+            isEnabled.set(false)
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.unmaskedLeague"
+            packageName = "League Proxy"
             packageVersion = "1.0.0"
         }
     }
