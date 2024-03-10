@@ -25,6 +25,8 @@ kotlin {
             implementation("org.jetbrains.kotlin:kotlin-scripting-common:$kotlin_version")
             implementation("org.jetbrains.kotlin:kotlin-scripting-jvm:$kotlin_version")
             implementation("org.jetbrains.kotlin:kotlin-scripting-jvm-host:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies:$kotlin_version")
+            implementation("org.jetbrains.kotlin:kotlin-scripting-dependencies-maven:$kotlin_version")
             implementation("io.github.reactivecircus.cache4k:cache4k:0.13.0")
             implementation("io.arrow-kt:arrow-core:1.2.1")
             implementation("io.github.xbaank:simpleJson-core:3.0.0")

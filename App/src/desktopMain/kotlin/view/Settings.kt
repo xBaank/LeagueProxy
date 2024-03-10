@@ -14,19 +14,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
+import okio.Path.Companion.toPath
+import scripting.eval
+import shared.Call
 
 @Composable
 fun Settings(
     isDarkColors: MutableState<Boolean>,
     isSettings: MutableState<Boolean>,
     isCollecting: MutableState<Boolean>,
+    scriptFunction: MutableState<((Call) -> Call)?>,
 ) {
     var showFilePicker by remember { mutableStateOf(false) }
 
     val fileType = listOf("kts")
     FilePicker(show = showFilePicker, fileExtensions = fileType) { platformFile ->
         showFilePicker = false
-        // do something with the file
+        scriptFunction.value = platformFile?.path?.toPath()?.toFile()?.let(::eval)
     }
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxHeight().width(350.dp)) {
@@ -66,18 +70,27 @@ fun Settings(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Script", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp))
-                Button(
-                    onClick = { showFilePicker = true },
-                    modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
-                ) {
-                    Text("Select")
+                if (scriptFunction.value == null) {
+                    Button(
+                        onClick = { showFilePicker = true },
+                        modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
+                    ) {
+                        Text("Select")
+                    }
+                } else {
+                    Button(
+                        onClick = { scriptFunction.value = null },
+                        modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
+                    ) {
+                        Text("Remove")
+                    }
                 }
             }
             Button(
                 onClick = { isSettings.value = false },
                 modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).width(rowWidth).padding(top = 20.dp)
             ) {
-                Text("Save")
+                Text("Go back")
             }
         }
     }

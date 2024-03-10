@@ -1,12 +1,9 @@
 import io.ktor.http.*
 import io.ktor.util.*
-import rtmp.amf0.*
 import shared.Body
 import shared.Call
 import shared.extensions.getOrThrow
 import shared.extensions.port
-import shared.proxies.utils.base64Ungzip
-import shared.proxies.utils.gzipBase64
 import simpleJson.*
 
 { value: Call ->
@@ -101,34 +98,11 @@ import simpleJson.*
         }
     }
 
-    fun rtmpTweak(value: List<Amf0Node>) {
-        try {
-            val body = value[3].toAmf0TypedObject()
-                ?.value
-                ?.get("body")
-                .toAmf0TypedObject()
 
-            val config = body?.get("configs").toAmf0String()?.value?.base64Ungzip()?.deserialized()?.getOrNull()
-            if (config == null) TODO()
-
-            config["ChampionSelect"]["UseOptimizedBotChampionSelectProcessor"] = true
-            config["ChampionSelect"]["UseOptimizedChampSelectProcessor"] = true
-            config["ChampionSelect"]["UseOptimizedSpellSelectProcessor"] = true
-            config["ChampionSelect"]["AllChampsAvailableInAram"] = true
-            config["LcuChampionSelect"]["PositionAssignmentAnimationEnabled"] = false
-            config["CustomGame"]["BotsAvailableInAram"] = true
-            config["LcuHome"]["RequireItemLoaded"] = false
-            body?.set("configs", Amf0String(config.serialized().gzipBase64()))
-
-        } catch (_: Throwable) {
-
-        }
-    }
 
     if (value is Call.RiotAuthCall.RiotAuthResponse) fixRiotAuth(value)
     if (value is Call.ConfigCall.ConfigResponse) patchConfigConfiguration(value)
     if (value is Call.HttpCall) fixHeaders(value)
-    if (value is Call.RtmpCall.RtmpResponse) rtmpTweak(value.data)
 
     value
 }

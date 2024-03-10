@@ -31,6 +31,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val isDarkColor = remember { mutableStateOf(true) }
     val isSettings = remember { mutableStateOf(false) }
     val isCollecting = remember { mutableStateOf(true) }
+    val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
     val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
     val xmppInterceptor = koinInject<XmppProxyInterceptor>()
@@ -44,9 +45,10 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
             xmppInterceptor.calls,
             rmsInterceptor.calls,
             httpProxyInterceptor.calls
-        ).flattenMerge().map { defaultFunction?.invoke(it) ?: it }.collect {
-            if (isCollecting.value) items.add(it)
-        }
+        ).flattenMerge()
+            .map { runCatching { defaultFunction?.invoke(it) }.getOrNull() ?: it }
+            .map { runCatching { scriptFunction.value?.invoke(it) }.getOrNull() ?: it }
+            .collect { if (isCollecting.value) items.add(it) }
     }
 
 
@@ -69,7 +71,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
             }
 
             if (isSettings.value) {
-                Settings(isDarkColor, isSettings, isCollecting)
+                Settings(isDarkColor, isSettings, isCollecting, scriptFunction)
             } else {
                 ProxyCalls(isSettings, items)
             }
