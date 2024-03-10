@@ -1,20 +1,24 @@
 package client
 
 import com.github.pgreze.process.process
-import extensions.inject
-import extensions.port
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
-import proxies.*
-import proxies.interceptors.*
-import proxies.interceptors.Call.ConfigCall.ConfigRequest
-import proxies.interceptors.Call.ConfigCall.ConfigResponse
-import proxies.interceptors.Call.RedEdgeCall.RedEdgeRequest
-import proxies.interceptors.Call.RedEdgeCall.RedEdgeResponse
-import proxies.interceptors.Call.RiotAuthCall.RiotAuthRequest
-import proxies.interceptors.Call.RiotAuthCall.RiotAuthResponse
-import proxies.utils.findFreePort
+import shared.Body
+import shared.Call.ConfigCall.ConfigRequest
+import shared.Call.ConfigCall.ConfigResponse
+import shared.Call.RedEdgeCall.RedEdgeRequest
+import shared.Call.RedEdgeCall.RedEdgeResponse
+import shared.Call.RiotAuthCall.RiotAuthRequest
+import shared.Call.RiotAuthCall.RiotAuthResponse
+import shared.extensions.inject
+import shared.extensions.port
+import shared.proxies.*
+import shared.proxies.interceptors.HttpProxyInterceptor
+import shared.proxies.interceptors.RmsProxyInterceptor
+import shared.proxies.interceptors.RtmpProxyInterceptor
+import shared.proxies.interceptors.XmppProxyInterceptor
+import shared.proxies.utils.findFreePort
 
 fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () -> Unit): ClientProxy {
     val rtmpProxyInterceptor by inject<RtmpProxyInterceptor>()

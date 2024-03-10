@@ -9,8 +9,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
 import kotlinx.coroutines.runBlocking
 import org.koin.compose.koinInject
-import proxies.interceptors.*
-import proxies.utils.killRiotClient
+import shared.Call
+import shared.proxies.interceptors.HttpProxyInterceptor
+import shared.proxies.interceptors.RmsProxyInterceptor
+import shared.proxies.interceptors.RtmpProxyInterceptor
+import shared.proxies.interceptors.XmppProxyInterceptor
+import shared.proxies.utils.killRiotClient
 import view.other.AlertDialog
 import view.theme.DarkColors
 import view.theme.LightColors

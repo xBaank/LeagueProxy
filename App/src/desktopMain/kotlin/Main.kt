@@ -6,15 +6,15 @@ import androidx.compose.ui.window.awaitApplication
 import client.CreateClientProxy
 import client.SystemYamlPatcher
 import exceptions.LeagueNotFoundException
-import extensions.inject
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.koin.core.context.startKoin
-import proxies.utils.isRiotClientRunning
-import proxies.utils.showError
+import shared.extensions.inject
+import shared.proxies.utils.isRiotClientRunning
+import shared.proxies.utils.showError
 import view.App
 import kotlin.system.exitProcess
 
