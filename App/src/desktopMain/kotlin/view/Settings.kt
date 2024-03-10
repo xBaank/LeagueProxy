@@ -16,22 +16,28 @@ import androidx.compose.ui.unit.sp
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 
 @Composable
-fun Settings(isDarkColors: MutableState<Boolean>, isSettings: MutableState<Boolean>) {
+fun Settings(
+    isDarkColors: MutableState<Boolean>,
+    isSettings: MutableState<Boolean>,
+    isCollecting: MutableState<Boolean>,
+) {
     var showFilePicker by remember { mutableStateOf(false) }
 
-    val fileType = listOf("main.kts")
+    val fileType = listOf("kts")
     FilePicker(show = showFilePicker, fileExtensions = fileType) { platformFile ->
         showFilePicker = false
         // do something with the file
     }
 
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxHeight()) {
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxHeight().width(350.dp)) {
         Column(
             modifier = Modifier.fillMaxHeight(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start
         ) {
+            val rowWidth = 200.dp
             Row(
+                modifier = Modifier.width(rowWidth),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -39,22 +45,38 @@ fun Settings(isDarkColors: MutableState<Boolean>, isSettings: MutableState<Boole
                 Switch(
                     checked = isDarkColors.value,
                     onCheckedChange = { isDarkColors.value = it },
-                    modifier = Modifier.padding(16.dp).pointerHoverIcon(PointerIcon.Hand)
+                    modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
                 )
             }
             Row(
+                modifier = Modifier.width(rowWidth),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Intercept script", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp))
+                Text("Collect", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp))
+                Switch(
+                    checked = isCollecting.value,
+                    onCheckedChange = { isCollecting.value = it },
+                    modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
+                )
+            }
+            Row(
+                modifier = Modifier.width(rowWidth),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Script", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp))
                 Button(
                     onClick = { showFilePicker = true },
-                    modifier = Modifier.padding(16.dp).pointerHoverIcon(PointerIcon.Hand)
+                    modifier = Modifier.padding(horizontal = 16.dp).pointerHoverIcon(PointerIcon.Hand)
                 ) {
                     Text("Select")
                 }
             }
-            Button(onClick = { isSettings.value = false }, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
+            Button(
+                onClick = { isSettings.value = false },
+                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).width(rowWidth).padding(top = 20.dp)
+            ) {
                 Text("Save")
             }
         }

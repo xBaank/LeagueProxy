@@ -7,8 +7,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
+import extensions.getResourceAsText
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.koin.compose.koinInject
+import scripting.eval
 import shared.Call
 import shared.proxies.interceptors.HttpProxyInterceptor
 import shared.proxies.interceptors.RmsProxyInterceptor
@@ -19,30 +25,28 @@ import view.other.AlertDialog
 import view.theme.DarkColors
 import view.theme.LightColors
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val isDarkColor = remember { mutableStateOf(true) }
     val isSettings = remember { mutableStateOf(false) }
+    val isCollecting = remember { mutableStateOf(true) }
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
     val rtmpInterceptor = koinInject<RtmpProxyInterceptor>()
     val xmppInterceptor = koinInject<XmppProxyInterceptor>()
     val rmsInterceptor = koinInject<RmsProxyInterceptor>()
     val httpProxyInterceptor = koinInject<HttpProxyInterceptor>()
+    val defaultFunction = remember { getResourceAsText("call.kts")?.let(::eval) }
 
     LaunchedEffect(Unit) {
-        rtmpInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        xmppInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        rmsInterceptor.calls.collect(items::add)
-    }
-
-    LaunchedEffect(Unit) {
-        httpProxyInterceptor.calls.collect(items::add)
+        flowOf(
+            rtmpInterceptor.calls,
+            xmppInterceptor.calls,
+            rmsInterceptor.calls,
+            httpProxyInterceptor.calls
+        ).flattenMerge().map { defaultFunction?.invoke(it) ?: it }.collect {
+            if (isCollecting.value) items.add(it)
+        }
     }
 
 
@@ -65,7 +69,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
             }
 
             if (isSettings.value) {
-                Settings(isDarkColor, isSettings)
+                Settings(isDarkColor, isSettings, isCollecting)
             } else {
                 ProxyCalls(isSettings, items)
             }

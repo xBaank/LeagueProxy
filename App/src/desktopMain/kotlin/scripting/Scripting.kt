@@ -1,21 +1,21 @@
 package scripting
 
+import shared.Call
 import java.io.File
-import kotlin.script.experimental.api.*
+import kotlin.script.experimental.api.ResultValue
+import kotlin.script.experimental.api.SourceCode
+import kotlin.script.experimental.api.valueOrNull
 import kotlin.script.experimental.host.toScriptSource
 import kotlin.script.experimental.jvm.dependenciesFromCurrentContext
 import kotlin.script.experimental.jvm.jvm
-import kotlin.script.experimental.jvm.updateClasspath
-import kotlin.script.experimental.jvm.util.classpathFromClass
 import kotlin.script.experimental.jvmhost.BasicJvmScriptingHost
 import kotlin.script.experimental.jvmhost.createJvmCompilationConfigurationFromTemplate
 
-inline fun <reified T : Any> eval(scriptFile: File, data: T) = eval(scriptFile.toScriptSource(), data)
-inline fun <reified T : Any> eval(value: String, data: T) = eval(value.toScriptSource(), data)
+fun eval(scriptFile: File) = eval(scriptFile.toScriptSource())
+fun eval(value: String) = eval(value.toScriptSource())
 
-inline fun <reified T : Any> eval(scriptFile: SourceCode, data: T): ResultWithDiagnostics<EvaluationResult> {
+fun eval(scriptFile: SourceCode): (Call) -> Call {
     val compilationConfiguration = createJvmCompilationConfigurationFromTemplate<SimpleScript> {
-        updateClasspath(classpathFromClass<T>())
         jvm {
             dependenciesFromCurrentContext(
                 wholeClasspath = true
@@ -24,7 +24,6 @@ inline fun <reified T : Any> eval(scriptFile: SourceCode, data: T): ResultWithDi
     }
 
     val result = BasicJvmScriptingHost().eval(scriptFile, compilationConfiguration, null)
-    val function = (result.valueOrNull()?.returnValue as? ResultValue.Value)?.value as (T) -> String
-    println(function(data))
-    return result
+    val function = (result.valueOrNull()?.returnValue as? ResultValue.Value)?.value as (Call) -> Call
+    return function
 }
