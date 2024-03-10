@@ -1,5 +1,5 @@
 allprojects {
-    group = "io.github.xbaank"
+    group = "io.github.xbaank.LeagueProxy"
     version = "1.0.0"
 }
 
@@ -8,7 +8,7 @@ plugins {
     // in each subproject's classloader
     alias(libs.plugins.jetbrainsCompose) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
-    id("maven-publish")
+    id("maven-publish") apply true
 }
 
 publishing {
