@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform") version "1.9.22"
+    id("maven-publish") apply true
 }
 val ktor_version: String by project
 
@@ -29,6 +30,20 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+            }
+        }
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                withType<MavenPublication> {
+                    groupId = group.toString()
+                    artifactId = "Rtmp"
+                    version = project.version.toString()
+                }
             }
         }
     }

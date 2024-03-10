@@ -8,17 +8,4 @@ plugins {
     // in each subproject's classloader
     alias(libs.plugins.jetbrainsCompose) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
-    id("maven-publish") apply true
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            withType<MavenPublication> {
-                groupId = group.toString()
-                artifactId = project.name
-                version = project.version.toString()
-            }
-        }
-    }
 }
