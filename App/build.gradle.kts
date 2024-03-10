@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.jetbrainsCompose)
+    id("maven-publish")
 }
 
 val ktor_version: String by project
@@ -64,6 +65,16 @@ kotlin {
     }
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            withType<MavenPublication> {
+                groupId = group.toString()
+                artifactId = "LeagueProxy"
+            }
+        }
+    }
+}
 
 compose.desktop {
     application {
