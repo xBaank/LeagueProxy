@@ -6,8 +6,8 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.cio.*
 import io.ktor.server.engine.*
+import io.ktor.server.netty.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -70,7 +70,7 @@ class HttpProxy(
     private var server: ApplicationEngine? = null
 
     override suspend fun start() {
-        val server = embeddedServer(CIO, port = port) {
+        val server = embeddedServer(Netty, port = port) {
             routing {
                 route("{...}") {
                     handle {

@@ -10,7 +10,6 @@ import shared.proxies.interceptors.HttpProxyInterceptor
 import shared.proxies.interceptors.RmsProxyInterceptor
 import shared.proxies.interceptors.RtmpProxyInterceptor
 import shared.proxies.interceptors.XmppProxyInterceptor
-import view.SettingsManager
 
 val module = module {
     single {
@@ -27,6 +26,7 @@ val module = module {
             }
         }
     }
+    singleOf(::SettingsManager)
     singleOf(::RtmpProxyInterceptor)
     singleOf(::XmppProxyInterceptor)
     singleOf(::RmsProxyInterceptor)
