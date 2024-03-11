@@ -2,8 +2,9 @@
 /.gradle/
 /Rtmp/build/
 /Rtmp/build/classes/kotlin/jvm/main/
-/UnmaskedLeague/build/
-/UnmaskedLeague/build/classes/kotlin/jvm/main/
+/Shared/build/
+/Shared/build/classes/kotlin/jvm/main/
 # Project exclude paths
 /App/build/
 /App/build/classes/kotlin/desktop/main/
+/build
