@@ -1,6 +1,7 @@
 package shared.proxies
 
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -41,6 +42,9 @@ typealias ResponseCreator = (
     method: HttpMethod,
     status: HttpStatusCode?,
 ) -> HttpCall
+
+private val logger = KotlinLogging.logger {}
+
 
 class HttpProxy(
     val proxyInterceptor: HttpProxyInterceptor,
@@ -164,8 +168,7 @@ class HttpProxy(
                             }
 
                         } catch (ex: Throwable) {
-                            println(ex)
-                            println(url)
+                            logger.error(ex) { "failed with url: $url" }
                             throw ex
                         }
                     }

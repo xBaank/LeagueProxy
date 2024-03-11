@@ -1,6 +1,7 @@
 package client
 
 import com.github.pgreze.process.process
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import kotlinx.coroutines.*
 import org.koin.core.component.KoinComponent
@@ -19,6 +20,8 @@ import shared.proxies.interceptors.RmsProxyInterceptor
 import shared.proxies.interceptors.RtmpProxyInterceptor
 import shared.proxies.interceptors.XmppProxyInterceptor
 import shared.proxies.utils.findFreePort
+
+private val logger = KotlinLogging.logger {}
 
 fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () -> Unit): ClientProxy {
     val rtmpProxyInterceptor by inject<RtmpProxyInterceptor>()
@@ -152,7 +155,7 @@ class ClientProxy internal constructor(
         }
 
         clientConfigProxy.start()
-        println("Started clientConfigProxy on port ${clientConfigProxy.port}")
+        logger.info { "Started clientConfigProxy on port ${clientConfigProxy.port}" }
     }
 
     suspend fun startClient(): Unit = coroutineScope {

@@ -36,10 +36,11 @@ kotlin {
             implementation("io.ktor:ktor-client-encoding:$ktor_version")
             implementation("io.ktor:ktor-network:$ktor_version")
             implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
-
+            implementation("io.github.oshai:kotlin-logging:6.0.3")
             // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-scripting-common
 
             implementation("com.darkrockstudios:mpfilepicker:3.1.0")
+            implementation("io.github.irgaly.kfswatch:kfswatch:1.0.0")
             // https://mvnrepository.com/artifact/org.yaml/snakeyaml
             implementation("org.yaml:snakeyaml:2.0")
             implementation("com.squareup.okio:okio:3.3.0")

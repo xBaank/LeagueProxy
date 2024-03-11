@@ -37,6 +37,8 @@ kotlin {
                 implementation("com.squareup.okio:okio:3.3.0")
                 // Check the 🔝 maven central badge 🔝 for the latest $kotlinProcessVersion
                 implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
+                implementation("io.github.oshai:kotlin-logging:6.0.3")
+                
                 implementation(project(":Rtmp"))
             }
         }

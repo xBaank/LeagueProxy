@@ -9,6 +9,9 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
 import extensions.getResourceAsText
+import io.github.irgaly.kfswatch.KfsDirectoryWatcher
+import io.github.irgaly.kfswatch.KfsEvent
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flattenMerge
@@ -16,6 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import okio.Path.Companion.DIRECTORY_SEPARATOR
 import okio.Path.Companion.toPath
 import org.koin.compose.koinInject
 import scripting.eval
@@ -30,6 +34,8 @@ import view.other.AlertDialog
 import view.theme.DarkColors
 import view.theme.LightColors
 
+private val logger = KotlinLogging.logger {}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
@@ -39,28 +45,54 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val rmsInterceptor = koinInject<RmsProxyInterceptor>()
     val httpProxyInterceptor = koinInject<HttpProxyInterceptor>()
     val settingsManager = koinInject<SettingsManager>()
-    val defaultFunction = remember { getResourceAsText("call.kts")?.let(::eval) }
-    val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
 
     var settings by remember { mutableStateOf(settingsManager.settings.value) }
     val isSettings = remember { mutableStateOf(false) }
 
+    val defaultFunction = remember { getResourceAsText("call.kts")?.let(::eval) }
+    val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
+
+
     LaunchedEffect(Unit) {
+        val watcher: KfsDirectoryWatcher = KfsDirectoryWatcher(this, Dispatchers.IO)
+
+        launch(Dispatchers.IO) {
+            watcher.onEventFlow.collect {
+                when (it.event) {
+                    KfsEvent.Create -> Unit
+                    KfsEvent.Delete -> Unit
+                    KfsEvent.Modify -> {
+                        if ((it.targetDirectory + DIRECTORY_SEPARATOR + it.path).toPath() == settings.scriptFile?.toPath()) {
+                            logger.info { "Reloading script" }
+                            scriptFunction.value = settings.scriptFile?.toPath()?.toFile()?.let(::eval)
+                            logger.info { "Reloaded script" }
+                        }
+                    }
+                }
+            }
+        }
+
         settingsManager.settings.collect {
             settings = it
             launch(Dispatchers.IO) {
                 runCatching {
-                    if (scriptFunction.value == null)
-                        scriptFunction.value = it.scriptFile?.toPath()?.toFile()?.let(::eval)
-                    else
+                    if (scriptFunction.value == null && it.scriptFile != null) {
+                        val parent = it.scriptFile.toPath().parent.toString()
+                        logger.info { "loading script" }
+                        scriptFunction.value = it.scriptFile.toPath().toFile().let(::eval)
+                        watcher.removeAll()
+                        watcher.add(parent)
+                        logger.info { "loaded script" }
+                    } else {
                         scriptFunction.value = null
+                        watcher.removeAll()
+                    }
                 }.onFailure {
                     showError(it.message ?: "", "Error evaluating the script")
                 }
             }
         }
     }
-
 
     LaunchedEffect(Unit) {
         flowOf(

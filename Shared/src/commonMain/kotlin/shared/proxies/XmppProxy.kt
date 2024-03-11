@@ -1,5 +1,6 @@
 package shared.proxies
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.network.tls.*
@@ -10,6 +11,8 @@ import shared.Call.XmppCall
 import shared.proxies.interceptors.ProxyInterceptor
 import kotlin.coroutines.cancellation.CancellationException
 
+
+private val logger = KotlinLogging.logger {}
 
 fun XmppProxy(host: String, port: Int, proxyEventHandler: ProxyInterceptor<String, XmppCall>): XmppProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
@@ -31,7 +34,7 @@ class XmppProxy internal constructor(
             val socketJob = async { serverSocket.accept() }
             started.complete()
             val socket = socketJob.await()
-            println("Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}")
+            logger.info { "Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}" }
             launch(Dispatchers.IO) { handle(socket) }
         }
     }

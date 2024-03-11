@@ -1,6 +1,7 @@
 package shared.proxies
 
 import arrow.core.raise.catch
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.cio.*
 import io.ktor.client.request.*
@@ -25,6 +26,8 @@ import java.time.Duration
 import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
 
 
+private val logger = KotlinLogging.logger {}
+
 class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInterceptor<JsonNode, Call.RmsCall>) :
     Proxy {
     override val port: Int = findFreePort()
@@ -41,7 +44,7 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
             }
             routing {
                 webSocketRaw("{...}") webSocket@{
-                    println("Accepted connection in ${call.request.uri}")
+                    logger.info { "Accepted connection in ${call.request.uri}" }
 
                     val clientSocket = client.webSocketRawSession(
                         method = HttpMethod.Get
@@ -76,6 +79,7 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
                                 clientSocket.flush()
                             }
                         } catch (e: Throwable) {
+                            logger.error(e) {}
                             clientSocket.close(e)
                         }
                     }
@@ -107,6 +111,7 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
                                 flush()
                             }
                         } catch (e: Throwable) {
+                            logger.error(e) {}
                             close(e)
                         }
                     }
