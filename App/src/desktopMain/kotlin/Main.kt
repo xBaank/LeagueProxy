@@ -17,6 +17,7 @@ import shared.extensions.inject
 import shared.proxies.utils.isRiotClientRunning
 import shared.proxies.utils.showError
 import view.App
+import java.awt.Dimension
 import kotlin.system.exitProcess
 
 suspend fun main() {
@@ -38,6 +39,7 @@ suspend fun main() {
         }
 
         Window(onCloseRequest = ::exitApplication, title = "TraitorsBlade") {
+            window.minimumSize = Dimension(800, 600)
             App(isRiotClientClosed)
         }
     }
