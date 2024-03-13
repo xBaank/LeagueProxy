@@ -76,7 +76,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "League Proxy"
-            packageVersion = "0.0.1"
+            packageVersion = "1.0.0"
         }
     }
 }
