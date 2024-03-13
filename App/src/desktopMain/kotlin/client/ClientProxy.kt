@@ -34,15 +34,15 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         region to proxyClient
     }.toMap()
 
-    val rmsProxies = systemYamlPatcher.rmsHostsByRegion.map { host ->
+    val rmsProxies = systemYamlPatcher.rmsHostsByRegion.map { (region, host) ->
         val proxyClient = RmsProxy(host.host, rmsProxyInterceptor)
-        proxyClient
-    }.toSet()
+        region to proxyClient
+    }.toMap()
 
-    val redEdgeProxies = systemYamlPatcher.redEdgeHostsByRegion.map { host ->
+    val redEdgeProxies = systemYamlPatcher.redEdgeHostsByRegion.map { (region, host) ->
         val proxyClient = HttpProxy(host.host, httpProxyInterceptor, ::RedEdgeRequest, ::RedEdgeResponse)
-        proxyClient
-    }.toSet()
+        region to proxyClient
+    }.toMap()
 
     val rioAuthenticateProxy = run {
         val port = findFreePort()
@@ -112,8 +112,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
                     method = method,
                     statusCode = status,
                     xmppProxies,
-                    rmsProxies,
-                    redEdgeProxies,
+                    rmsProxies.values.toSet(),
+                    redEdgeProxies.values.toSet(),
                     rioAuthProxy,
                     rioAuthenticateProxy,
                     rioEntitlementAuthProxy,
@@ -129,13 +129,21 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
 
     systemYamlPatcher.patchSystemYaml(lcdsHosts)
 
-    val proxies =
-        xmppProxies.values + rtmpProxies.values + rmsProxies + redEdgeProxies + rioAuthProxy + rioEntitlementAuthProxy + rioAffinityProxy + rioAuthenticateProxy
+    val proxies = setOf<Proxy>(
+        xmppProxies["EUW"]!!,
+        rtmpProxies["EUW"]!!,
+        rmsProxies["EUW"]!!,
+        redEdgeProxies["EUW"]!!,
+        rioAuthProxy,
+        rioEntitlementAuthProxy,
+        rioAffinityProxy,
+        rioAuthenticateProxy
+    )
 
     return ClientProxy(
         systemYamlPatcher = systemYamlPatcher,
         clientConfigProxy = clientConfigProxy,
-        proxies = proxies.toSet(),
+        proxies = proxies,
         onClientClose = onClientClose
     )
 }
@@ -148,12 +156,7 @@ class ClientProxy internal constructor(
 ) : KoinComponent, AutoCloseable {
 
     suspend fun startProxies() = coroutineScope {
-        proxies.forEach {
-            launch {
-                it.start()
-            }
-        }
-
+        proxies.forEach { launch { it.start() } }
         clientConfigProxy.start()
         logger.info { "Started clientConfigProxy on port ${clientConfigProxy.port}" }
     }

@@ -38,7 +38,10 @@ suspend fun main() {
             settingsManager.collect()
         }
 
-        Window(onCloseRequest = ::exitApplication, title = "TraitorsBlade") {
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "TraitorsBlade"
+        ) {
             window.minimumSize = Dimension(800, 600)
             App(isRiotClientClosed)
         }

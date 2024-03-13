@@ -23,8 +23,8 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
     val systemYamlContent: Map<String, Any>
     val rtmpHostsByRegion: Map<String, Host>
     val xmppHostsByRegion: Map<String, Host>
-    val rmsHostsByRegion: Set<Host>
-    val redEdgeHostsByRegion: Set<Host>
+    val rmsHostsByRegion: Map<String, Host>
+    val redEdgeHostsByRegion: Map<String, Host>
     private val systemYamlContentCopy: Map<String, Any>
 
     init {
@@ -107,24 +107,26 @@ class SystemYamlPatcher : KoinComponent, AutoCloseable {
         return hosts
     }
 
-    private fun getRedEdgeHosts(): MutableSet<Host> {
-        val hosts = mutableSetOf<Host>()
+    private fun getRedEdgeHosts(): MutableMap<String, Host> {
+        val hosts = mutableMapOf<String, Host>()
         systemYamlContent.getMap("region_data").forEach {
+            val region = it.key
             val chat = it.value.getMap("servers").getMap("league_edge") as MutableMap<String, Any?>
             val host = chat["league_edge_url"] as String
             val port = 443
-            hosts += Host(host, port)
+            hosts[region] = Host(host, port)
         }
         return hosts
     }
 
-    private fun getRmsHosts(): Set<Host> {
-        val hosts = mutableSetOf<Host>()
+    private fun getRmsHosts(): MutableMap<String, Host> {
+        val hosts = mutableMapOf<String, Host>()
         systemYamlContent.getMap("region_data").forEach {
+            val region = it.key
             val chat = it.value.getMap("servers").getMap("rms") as MutableMap<String, Any?>
             val host = chat["rms_url"] as String
             val port = 443
-            hosts += Host(host, port)
+            hosts[region] = Host(host, port)
         }
         return hosts
     }

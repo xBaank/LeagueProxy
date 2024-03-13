@@ -35,7 +35,7 @@ class XmppProxy internal constructor(
             val socketJob = async { serverSocket.accept() }
             started.complete()
             val socket = socketJob.await()
-            logger.info { "Accepted rtmp connection from ${socket.remoteAddress} in ${socket.localAddress}" }
+            logger.info { "Accepted xmpp connection from ${socket.remoteAddress} in ${socket.localAddress}" }
             launch(Dispatchers.IO) { handle(socket) }
         }
     }
