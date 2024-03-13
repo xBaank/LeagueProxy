@@ -19,4 +19,5 @@ dependencyResolutionManagement {
 }
 
 include(":Rtmp")
+include(":Shared")
 include(":App")

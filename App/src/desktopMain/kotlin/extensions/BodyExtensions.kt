@@ -1,6 +1,6 @@
 package extensions
 
-import proxies.interceptors.Body
+import shared.Body
 import simpleJson.serialized
 
 @OptIn(ExperimentalStdlibApi::class)

@@ -6,11 +6,10 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
-import proxies.interceptors.HttpProxyInterceptor
-import proxies.interceptors.RmsProxyInterceptor
-import proxies.interceptors.RtmpProxyInterceptor
-import proxies.interceptors.XmppProxyInterceptor
-import view.SettingsManager
+import shared.proxies.interceptors.HttpProxyInterceptor
+import shared.proxies.interceptors.RmsProxyInterceptor
+import shared.proxies.interceptors.RtmpProxyInterceptor
+import shared.proxies.interceptors.XmppProxyInterceptor
 
 val module = module {
     single {
@@ -27,6 +26,7 @@ val module = module {
             }
         }
     }
+    singleOf(::SettingsManager)
     singleOf(::RtmpProxyInterceptor)
     singleOf(::XmppProxyInterceptor)
     singleOf(::RmsProxyInterceptor)

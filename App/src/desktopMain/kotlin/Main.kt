@@ -6,16 +6,18 @@ import androidx.compose.ui.window.awaitApplication
 import client.CreateClientProxy
 import client.SystemYamlPatcher
 import exceptions.LeagueNotFoundException
-import extensions.inject
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
-import proxies.utils.isRiotClientRunning
-import proxies.utils.showError
+import shared.extensions.inject
+import shared.proxies.utils.isRiotClientRunning
+import shared.proxies.utils.showError
 import view.App
+import java.awt.Dimension
 import kotlin.system.exitProcess
 
 suspend fun main() {
@@ -23,6 +25,7 @@ suspend fun main() {
 
     awaitApplication {
         val isRiotClientClosed = remember { mutableStateOf(runBlocking { !isRiotClientRunning() }) }
+        val settingsManager = koinInject<SettingsManager>()
 
         LaunchedEffect(isRiotClientClosed.value) {
             if (!isRiotClientClosed.value) return@LaunchedEffect
@@ -31,7 +34,15 @@ suspend fun main() {
             }
         }
 
-        Window(onCloseRequest = ::exitApplication, title = "TraitorsBlade") {
+        LaunchedEffect(Unit) {
+            settingsManager.collect()
+        }
+
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "TraitorsBlade"
+        ) {
+            window.minimumSize = Dimension(800, 600)
             App(isRiotClientClosed)
         }
     }

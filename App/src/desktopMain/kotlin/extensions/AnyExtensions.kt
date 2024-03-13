@@ -2,6 +2,9 @@
 
 package extensions
 
+fun getResourceAsText(path: String): String? =
+    object {}.javaClass.getResource(path)?.readText()
+
 fun Any?.getMap(s: String) = (this as Map<String, Any?>)[s] as Map<String, Any?>
 
 fun Any.prettyPrint(): String {
