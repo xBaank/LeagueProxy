@@ -53,7 +53,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val defaultFunction: ((Call) -> Call) = remember {
         runBlocking { Res.readBytes("files/call.kts").decodeToString().let(::eval) }
     }
-    
+
     val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
 
     val onScriptFailure = { ex: Throwable ->
@@ -106,10 +106,10 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
 
     LaunchedEffect(Unit) {
         flowOf(
-            rtmpInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
-            xmppInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
-            rmsInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
-            httpProxyInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO)
+            rtmpInterceptor.calls.consumeAsFlow(),
+            xmppInterceptor.calls.consumeAsFlow(),
+            rmsInterceptor.calls.consumeAsFlow(),
+            httpProxyInterceptor.calls.consumeAsFlow()
         ).flattenMerge()
             .map {
                 runCatching { defaultFunction.invoke(it) }
