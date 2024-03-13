@@ -1,22 +1,14 @@
 package shared.proxies.interceptors
 
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import shared.Call.XmppCall
-import shared.Call.XmppCall.XmppRequest
-import shared.Call.XmppCall.XmppResponse
 
-class XmppProxyInterceptor : ProxyInterceptor<String, XmppCall> {
-    val calls: MutableSharedFlow<XmppCall> = MutableSharedFlow()
+class XmppProxyInterceptor {
+    val calls: Channel<XmppCall> = Channel()
+    val interceptedCalls: Channel<XmppCall> = Channel()
 
-    override suspend fun onRequest(value: String): XmppCall {
-        val call = XmppRequest(value)
-        calls.emit(call)
-        return call
-    }
-
-    override suspend fun onResponse(value: String): XmppCall {
-        val call = XmppResponse(value)
-        calls.emit(call)
-        return call
+    suspend fun intercept(call: XmppCall): XmppCall {
+        calls.send(call)
+        return interceptedCalls.receive()
     }
 }

@@ -1,3 +1,5 @@
+package files
+
 import io.ktor.http.*
 import io.ktor.util.*
 import shared.Body
@@ -97,8 +99,6 @@ import simpleJson.*
             }
         }
     }
-
-
 
     if (value is Call.RiotAuthCall.RiotAuthResponse) fixRiotAuth(value)
     if (value is Call.ConfigCall.ConfigResponse) patchConfigConfiguration(value)

@@ -14,12 +14,12 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import shared.Call
-import shared.proxies.interceptors.ProxyInterceptor
+import shared.Call.RmsCall.RmsRequest
+import shared.Call.RmsCall.RmsResponse
+import shared.proxies.interceptors.RmsProxyInterceptor
 import shared.proxies.utils.findFreePort
 import shared.proxies.utils.gzipArray
 import shared.proxies.utils.ungzip
-import simpleJson.JsonNode
 import simpleJson.deserialized
 import simpleJson.serialized
 import java.time.Duration
@@ -28,7 +28,7 @@ import io.ktor.client.plugins.websocket.WebSockets as ClientWebSockets
 
 private val logger = KotlinLogging.logger {}
 
-class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInterceptor<JsonNode, Call.RmsCall>) :
+class RmsProxy(override val url: String, private val proxyEventHandler: RmsProxyInterceptor) :
     Proxy {
     override val port: Int = findFreePort()
     override val started: CompletableJob = Job()
@@ -68,7 +68,7 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
                                 }
 
                                 if (node != null) {
-                                    val response = proxyEventHandler.onRequest(node)
+                                    val response = proxyEventHandler.intercept(RmsRequest(node))
                                     if (frame is Frame.Text) clientSocket.send(Frame.Text(response.data.serialized()))
                                     if (frame is Frame.Binary) clientSocket.send(
                                         Frame.Binary(frame.fin, response.data.serialized().toByteArray().gzipArray())
@@ -99,7 +99,7 @@ class RmsProxy(override val url: String, private val proxyEventHandler: ProxyInt
                                 }
 
                                 if (node != null) {
-                                    val response = proxyEventHandler.onResponse(node)
+                                    val response = proxyEventHandler.intercept(RmsResponse(node))
                                     if (frame is Frame.Text) send(Frame.Text(response.data.serialized()))
                                     if (frame is Frame.Binary) send(
                                         Frame.Binary(frame.fin, response.data.serialized().toByteArray().gzipArray())

@@ -8,19 +8,20 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.ApplicationScope
-import extensions.getResourceAsText
+import exceptions.ScriptException
+import extensions.lastModified
 import io.github.irgaly.kfswatch.KfsDirectoryWatcher
 import io.github.irgaly.kfswatch.KfsEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.xbaank.leagueproxy.app.generated.resources.Res
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okio.Path.Companion.DIRECTORY_SEPARATOR
 import okio.Path.Companion.toPath
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.koin.compose.koinInject
 import scripting.eval
 import shared.Call
@@ -36,7 +37,7 @@ import view.theme.LightColors
 
 private val logger = KotlinLogging.logger {}
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, ExperimentalResourceApi::class)
 @Composable
 fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     val items: SnapshotStateList<Call> = remember { mutableStateListOf() }
@@ -49,25 +50,37 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
     var settings by remember { mutableStateOf(settingsManager.settings.value) }
     val isSettings = remember { mutableStateOf(false) }
 
-    val defaultFunction = remember { getResourceAsText("call.kts")?.let(::eval) }
+    val defaultFunction: ((Call) -> Call) = remember {
+        runBlocking { Res.readBytes("files/call.kts").decodeToString().let(::eval) }
+    }
+    
     val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
+
+    val onScriptFailure = { ex: Throwable ->
+        if (ex is ScriptException) showError(ex.message ?: "", "Error evaluating the script")
+        else logger.error(ex) {}
+    }
 
 
     LaunchedEffect(Unit) {
-        val watcher: KfsDirectoryWatcher = KfsDirectoryWatcher(this, Dispatchers.IO)
+        val watcher: KfsDirectoryWatcher = KfsDirectoryWatcher(this, Dispatchers.IO, rawEventEnabled = true)
+        var lastmodified: Long = 0
 
         launch(Dispatchers.IO) {
             watcher.onEventFlow.collect {
                 when (it.event) {
-                    KfsEvent.Create -> Unit
-                    KfsEvent.Delete -> Unit
                     KfsEvent.Modify -> {
-                        if ((it.targetDirectory + DIRECTORY_SEPARATOR + it.path).toPath() == settings.scriptFile?.toPath()) {
-                            logger.info { "Reloading script" }
-                            scriptFunction.value = settings.scriptFile?.toPath()?.toFile()?.let(::eval)
-                            logger.info { "Reloaded script" }
+                        val path = settings.scriptFile?.toPath()
+                        if ((it.targetDirectory + DIRECTORY_SEPARATOR + it.path).toPath() == path) {
+                            val currentLastModified = path.lastModified()
+                            if (lastmodified < currentLastModified) {
+                                scriptFunction.value = path.toFile().let(::eval)
+                                lastmodified = currentLastModified
+                            }
                         }
                     }
+
+                    else -> Unit
                 }
             }
         }
@@ -78,38 +91,44 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
                 runCatching {
                     if (scriptFunction.value == null && it.scriptFile != null) {
                         val parent = it.scriptFile.toPath().parent.toString()
-                        logger.info { "loading script" }
                         scriptFunction.value = it.scriptFile.toPath().toFile().let(::eval)
                         watcher.removeAll()
                         watcher.add(parent)
-                        logger.info { "loaded script" }
                     } else {
                         scriptFunction.value = null
                         watcher.removeAll()
                     }
-                }.onFailure {
-                    showError(it.message ?: "", "Error evaluating the script")
-                }
+                }.onFailure(onScriptFailure)
+                    .onFailure { settingsManager.settings.value = settings.copy(scriptFile = null) }
             }
         }
     }
 
     LaunchedEffect(Unit) {
         flowOf(
-            rtmpInterceptor.calls,
-            xmppInterceptor.calls,
-            rmsInterceptor.calls,
-            httpProxyInterceptor.calls
+            rtmpInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
+            xmppInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
+            rmsInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO),
+            httpProxyInterceptor.calls.consumeAsFlow().flowOn(Dispatchers.IO)
         ).flattenMerge()
             .map {
-                runCatching { defaultFunction?.invoke(it) }.onFailure {
-                    showError(it.message ?: "", "Error executing the script")
-                }.getOrNull() ?: it
+                runCatching { defaultFunction.invoke(it) }
+                    .onFailure(onScriptFailure)
+                    .getOrNull() ?: it
             }
             .map {
-                runCatching { scriptFunction.value?.invoke(it) }.onFailure {
-                    showError(it.message ?: "", "Error executing the script")
-                }.getOrNull() ?: it
+                runCatching { scriptFunction.value?.invoke(it) }
+                    .onFailure(onScriptFailure)
+                    .onFailure { settingsManager.settings.value = settings.copy(scriptFile = null) }
+                    .getOrNull() ?: it
+            }
+            .onEach {
+                when (it) {
+                    is Call.HttpCall -> httpProxyInterceptor.interceptedCalls.send(it)
+                    is Call.RmsCall -> rmsInterceptor.interceptedCalls.send(it)
+                    is Call.RtmpCall -> rtmpInterceptor.interceptedCalls.send(it)
+                    is Call.XmppCall -> xmppInterceptor.interceptedCalls.send(it)
+                }
             }
             .collect { if (settings.isCollecting) items.add(it) }
     }

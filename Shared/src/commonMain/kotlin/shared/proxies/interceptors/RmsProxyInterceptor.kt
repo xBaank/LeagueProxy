@@ -1,25 +1,14 @@
 package shared.proxies.interceptors
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-import shared.Call
-import shared.Call.RmsCall.RmsRequest
-import shared.Call.RmsCall.RmsResponse
-import simpleJson.JsonNode
+import kotlinx.coroutines.channels.Channel
+import shared.Call.RmsCall
 
-class RmsProxyInterceptor : ProxyInterceptor<JsonNode, Call.RmsCall> {
-    val calls: MutableSharedFlow<Call.RmsCall> = MutableSharedFlow()
+class RmsProxyInterceptor {
+    val calls: Channel<RmsCall> = Channel()
+    val interceptedCalls: Channel<RmsCall> = Channel()
 
-    override suspend fun onRequest(value: JsonNode): Call.RmsCall {
-        val request = RmsRequest(value)
-        calls.emit(request)
-        return request
+    suspend fun intercept(call: RmsCall): RmsCall {
+        calls.send(call)
+        return interceptedCalls.receive()
     }
-
-    override suspend fun onResponse(value: JsonNode): Call.RmsCall {
-        val response = RmsResponse(value)
-        calls.emit(response)
-        return response
-    }
-
-
 }

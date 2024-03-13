@@ -98,7 +98,7 @@ class HttpProxy(
                                 }
                             }
 
-                            val interceptedRequest = proxyInterceptor.onRequest(
+                            val interceptedRequest = proxyInterceptor.intercept(
                                 requestCreator(
                                     body,
                                     url,
@@ -135,7 +135,7 @@ class HttpProxy(
                                 }
                             }
 
-                            val interceptedResponse = proxyInterceptor.onResponse(
+                            val interceptedResponse = proxyInterceptor.intercept(
                                 responseCreator(
                                     responseBody,
                                     url,

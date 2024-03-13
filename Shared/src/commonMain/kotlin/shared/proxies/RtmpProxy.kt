@@ -9,15 +9,15 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import rtmp.Amf0MessagesHandler
-import rtmp.amf0.Amf0Node
 import rtmp.packets.RawRtmpPacket
-import shared.Call.RtmpCall
-import shared.proxies.interceptors.ProxyInterceptor
+import shared.Call.RtmpCall.RtmpRequest
+import shared.Call.RtmpCall.RtmpResponse
+import shared.proxies.interceptors.RtmpProxyInterceptor
 
 
 private val logger = KotlinLogging.logger {}
 
-fun RtmpProxy(host: String, port: Int, proxyEventHandler: ProxyInterceptor<List<Amf0Node>, RtmpCall>): RtmpProxy {
+fun RtmpProxy(host: String, port: Int, proxyEventHandler: RtmpProxyInterceptor): RtmpProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -28,7 +28,7 @@ class RtmpProxy internal constructor(
     val serverSocket: ServerSocket,
     override val url: String,
     override val port: Int,
-    private val interceptor: ProxyInterceptor<List<Amf0Node>, RtmpCall>,
+    private val interceptor: RtmpProxyInterceptor,
 ) : Proxy {
     override val started: CompletableJob = Job()
 
@@ -71,14 +71,14 @@ class RtmpProxy internal constructor(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = clientReadChannel,
             output = serverWriteChannel,
-            interceptor = { interceptor.onResponse(it).data }
+            interceptor = { interceptor.intercept(RtmpResponse(it)).data }
         )
 
         val outputMessageHandler = Amf0MessagesHandler(
             incomingPartialRawMessages = incomingPartialRawMessages,
             input = serverReadChannel,
             output = clientWriteChannel,
-            interceptor = { interceptor.onRequest(it).data }
+            interceptor = { interceptor.intercept(RtmpRequest(it)).data }
         )
 
         launch(Dispatchers.IO) {

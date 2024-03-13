@@ -7,14 +7,15 @@ import io.ktor.network.tls.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import shared.Call.XmppCall
-import shared.proxies.interceptors.ProxyInterceptor
+import shared.Call.XmppCall.XmppRequest
+import shared.Call.XmppCall.XmppResponse
+import shared.proxies.interceptors.XmppProxyInterceptor
 import kotlin.coroutines.cancellation.CancellationException
 
 
 private val logger = KotlinLogging.logger {}
 
-fun XmppProxy(host: String, port: Int, proxyEventHandler: ProxyInterceptor<String, XmppCall>): XmppProxy {
+fun XmppProxy(host: String, port: Int, proxyEventHandler: XmppProxyInterceptor): XmppProxy {
     val selectorManager = SelectorManager(Dispatchers.IO)
     val socketServer = aSocket(selectorManager).tcp().bind()
 
@@ -25,7 +26,7 @@ class XmppProxy internal constructor(
     val serverSocket: ServerSocket,
     override val url: String,
     override val port: Int,
-    private val proxyEventHandler: ProxyInterceptor<String, XmppCall>,
+    private val proxyEventHandler: XmppProxyInterceptor,
 ) : Proxy {
     override val started: CompletableJob = Job()
 
@@ -74,7 +75,7 @@ class XmppProxy internal constructor(
                     return@launch
                 }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
-                if (string.isNotBlank()) proxyEventHandler.onResponse(string)
+                if (string.isNotBlank()) proxyEventHandler.intercept(XmppResponse(string))
                 serverWriteChannel.writeFully(byteArray, 0, read)
             }
         }
@@ -92,7 +93,7 @@ class XmppProxy internal constructor(
                     return@launch
                 }
                 val string = byteArray.copyOfRange(0, read).decodeToString()
-                if (string.isNotBlank()) proxyEventHandler.onRequest(string)
+                if (string.isNotBlank()) proxyEventHandler.intercept(XmppRequest(string))
 
                 clientWriteChannel.writeFully(byteArray, 0, read)
             }

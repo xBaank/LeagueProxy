@@ -37,6 +37,9 @@ kotlin {
             implementation("io.ktor:ktor-network:$ktor_version")
             implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
             implementation("io.github.oshai:kotlin-logging:6.0.3")
+            // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+            implementation("org.slf4j:slf4j-api:2.0.12")
+            implementation("org.slf4j:slf4j-simple:2.0.12")
             // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-scripting-common
 
             implementation("com.darkrockstudios:mpfilepicker:3.1.0")
