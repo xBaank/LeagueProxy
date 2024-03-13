@@ -130,15 +130,11 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     systemYamlPatcher.patchSystemYaml(lcdsHosts)
 
     val proxies = setOf<Proxy>(
-        xmppProxies["EUW"]!!,
-        rtmpProxies["EUW"]!!,
-        rmsProxies["EUW"]!!,
-        redEdgeProxies["EUW"]!!,
         rioAuthProxy,
         rioEntitlementAuthProxy,
         rioAffinityProxy,
         rioAuthenticateProxy
-    )
+    ) + xmppProxies.values + rtmpProxies.values + rmsProxies.values + redEdgeProxies.values
 
     return ClientProxy(
         systemYamlPatcher = systemYamlPatcher,
