@@ -1,6 +1,6 @@
 allprojects {
     group = "io.github.xbaank.LeagueProxy"
-    version = "1.0.2"
+    version = "1.0.3"
 }
 
 plugins {
