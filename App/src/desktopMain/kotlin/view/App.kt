@@ -54,7 +54,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
         runBlocking { Res.readBytes("files/call.kts").decodeToString().let(::eval) }
     }
 
-    val scriptFunction: MutableState<((Call) -> Call)?> = remember { mutableStateOf(null) }
+    val scriptFunction = remember { mutableStateOf(settings.scriptFile?.toPath()?.toFile()?.let(::eval)) }
 
     val onScriptFailure = { ex: Throwable ->
         if (ex is ScriptException) showError(ex.message ?: "", "Error evaluating the script")
@@ -89,7 +89,7 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
             settings = it
             launch(Dispatchers.IO) {
                 runCatching {
-                    if (scriptFunction.value == null && it.scriptFile != null) {
+                    if (it.scriptFile != null) {
                         val parent = it.scriptFile.toPath().parent.toString()
                         scriptFunction.value = it.scriptFile.toPath().toFile().let(::eval)
                         watcher.removeAll()
