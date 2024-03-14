@@ -80,12 +80,14 @@ import simpleJson.*
         }
 
         if (json["keystone.player-reporting.report_collector_url"].isRight()) {
-            json["keystone.player-reporting.report_collector_url"] =
-                "http://127.0.0.1:${response.riotPlatformEdge.port}"
-            json["keystone.player-reporting.report_collector_url_by_affinities"]["eu"] =
-                "http://127.0.0.1:${response.riotPlatformEdge.port}"
+            response.riotReportCollector.url = "https://euc1-red.pp.sgp.pvp.net" //TDO remove this hardcoded
 
-            json["keystone.client.feature_flags.restriction.enabled"] = false
+            json["keystone.player-reporting.report_collector_url"] =
+                "http://127.0.0.1:${response.riotReportCollector.port}"
+            json["keystone.player-reporting.report_collector_url_by_affinities"]["eu"] =
+                "http://127.0.0.1:${response.riotReportCollector.port}"
+
+            json["keystone.client.feature_flags.playerReporting.enabled"] = true
         }
 
         if (json["lol.client_settings.league_edge.url"].isRight()) {

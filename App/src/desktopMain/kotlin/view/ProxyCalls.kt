@@ -45,7 +45,7 @@ import view.other.TextArea
 @Composable
 fun ProxyCalls(isSettings: MutableState<Boolean>, items: SnapshotStateList<Call>) {
     var searchText by remember { mutableStateOf("") }
-    val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS", "RED EDGE", "RIOT AUTH")
+    val dropDownItems = mutableListOf("XMPP", "RTMP", "CONFIG", "RMS", "HTTP", "RIOT AUTH")
     val selectedItems = remember { mutableStateOf(dropDownItems.toList()) }
 
     Column {
@@ -352,8 +352,8 @@ private fun RenderSelectableText(text: String, originalTextF: (() -> String)? = 
 }
 
 fun callPreview(item: Call) = when (item) {
-    is GenericHttpRequest -> "RED EDGE REQUEST"
-    is GenericHttpResponse -> "RED EDGE RESPONSE"
+    is GenericHttpRequest -> "HTTP REQUEST"
+    is GenericHttpResponse -> "HTTP RESPONSE"
     is ConfigResponse -> "CONFIG RESPONSE"
     is ConfigRequest -> "CONFIG REQUEST"
     is RmsRequest -> "RMS REQUEST"
@@ -373,7 +373,7 @@ fun Sequence<Call>.filterBySelection(list: List<String>) = filter {
         is RtmpCall -> list.contains("RTMP")
         is XmppCall -> list.contains("XMPP")
         is RmsCall -> list.contains("RMS")
-        is GenericHttpCall -> list.contains("RED EDGE")
+        is GenericHttpCall -> list.contains("HTTP")
         is RiotAuthCall -> list.contains("RIOT AUTH")
     }
 }

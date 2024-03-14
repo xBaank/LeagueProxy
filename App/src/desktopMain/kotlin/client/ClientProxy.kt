@@ -95,6 +95,19 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         proxyClient
     }
 
+    val riotReportCollector = run {
+        val port = findFreePort()
+        val proxyClient = HttpProxy(
+            port = port,
+            proxyInterceptor = httpProxyInterceptor,
+            requestCreator = ::GenericHttpRequest,
+            responseCreator = { data: Body, url: String, headers: Headers, method: HttpMethod, status: HttpStatusCode? ->
+                GenericHttpResponse(data, url, headers, method, status)
+            }
+        )
+        proxyClient
+    }
+
     val rioEntitlementAuthProxy = run {
         val port = findFreePort()
         val proxyClient = HttpProxy(
@@ -131,7 +144,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
                     riotAuthenticateProxy = rioAuthenticateProxy,
                     rioEntitlementAuthProxy = rioEntitlementAuthProxy,
                     riotAffinityServer = rioAffinityProxy,
-                    riotPlatformEdge = riotPlatformEdge
+                    riotPlatformEdge = riotPlatformEdge,
+                    riotReportCollector = riotReportCollector
                 )
             }
 
@@ -148,7 +162,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         rioEntitlementAuthProxy,
         rioAffinityProxy,
         rioAuthenticateProxy,
-        riotPlatformEdge
+        riotPlatformEdge,
+        riotReportCollector
     ) + xmppProxies.values + rtmpProxies.values + rmsProxies.values + redEdgeProxies.values
 
     return ClientProxy(
