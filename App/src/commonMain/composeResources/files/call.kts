@@ -60,6 +60,13 @@ import simpleJson.*
             json["keystone.rso_auth.use_new_login_api"] = false
         }
 
+        if (json["lol.client_settings.player_platform_edge.url"].isRight()) {
+            response.riotPlatformEdge.url = json["lol.client_settings.player_platform_edge.url"].asString().getOrThrow()
+            json["lol.client_settings.player_platform_edge.url"] = "http://127.0.0.1:${response.riotPlatformEdge.port}"
+            json["lol.client_settings.player_platform_edge.enable"] = true
+            json["lol.client_settings.match_history.player_platform_edge.enabled"] = true
+        }
+
         if (json["keystone.player-affinity.playerAffinityServiceURL"].isRight()) {
             response.riotAffinityServer.url =
                 json["keystone.player-affinity.playerAffinityServiceURL"].asString().getOrThrow()
@@ -70,6 +77,15 @@ import simpleJson.*
         if (json["keystone.entitlements.url"].isRight()) {
             response.rioEntitlementAuthProxy.url = json["keystone.entitlements.url"].asString().getOrThrow()
             json["keystone.entitlements.url"] = "http://127.0.0.1:${response.rioEntitlementAuthProxy.port}"
+        }
+
+        if (json["keystone.player-reporting.report_collector_url"].isRight()) {
+            json["keystone.player-reporting.report_collector_url"] =
+                "http://127.0.0.1:${response.riotPlatformEdge.port}"
+            json["keystone.player-reporting.report_collector_url_by_affinities"]["eu"] =
+                "http://127.0.0.1:${response.riotPlatformEdge.port}"
+
+            json["keystone.client.feature_flags.restriction.enabled"] = false
         }
 
         if (json["lol.client_settings.league_edge.url"].isRight()) {

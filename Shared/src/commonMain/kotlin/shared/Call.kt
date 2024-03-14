@@ -53,25 +53,26 @@ sealed interface Call {
             val riotAuthenticateProxy: HttpProxy,
             val rioEntitlementAuthProxy: HttpProxy,
             val riotAffinityServer: HttpProxy,
+            val riotPlatformEdge: HttpProxy,
         ) : ConfigCall
     }
 
-    sealed interface RedEdgeCall : HttpCall {
-        data class RedEdgeResponse(
+    sealed interface GenericHttpCall : HttpCall {
+        data class GenericHttpResponse(
             override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
             override var statusCode: HttpStatusCode?,
-        ) : RedEdgeCall
+        ) : GenericHttpCall
 
-        data class RedEdgeRequest(
+        data class GenericHttpRequest(
             override val body: Body,
             override val url: String,
             override var headers: Headers,
             override val method: HttpMethod,
             override var statusCode: HttpStatusCode?,
-        ) : RedEdgeCall
+        ) : GenericHttpCall
     }
 
     sealed interface RiotAuthCall : HttpCall {

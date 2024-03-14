@@ -26,8 +26,8 @@ import shared.Call
 import shared.Call.*
 import shared.Call.ConfigCall.ConfigRequest
 import shared.Call.ConfigCall.ConfigResponse
-import shared.Call.RedEdgeCall.RedEdgeRequest
-import shared.Call.RedEdgeCall.RedEdgeResponse
+import shared.Call.GenericHttpCall.GenericHttpRequest
+import shared.Call.GenericHttpCall.GenericHttpResponse
 import shared.Call.RiotAuthCall.RiotAuthRequest
 import shared.Call.RiotAuthCall.RiotAuthResponse
 import shared.Call.RmsCall.RmsRequest
@@ -352,8 +352,8 @@ private fun RenderSelectableText(text: String, originalTextF: (() -> String)? = 
 }
 
 fun callPreview(item: Call) = when (item) {
-    is RedEdgeRequest -> "RED EDGE REQUEST"
-    is RedEdgeResponse -> "RED EDGE RESPONSE"
+    is GenericHttpRequest -> "RED EDGE REQUEST"
+    is GenericHttpResponse -> "RED EDGE RESPONSE"
     is ConfigResponse -> "CONFIG RESPONSE"
     is ConfigRequest -> "CONFIG REQUEST"
     is RmsRequest -> "RMS REQUEST"
@@ -373,7 +373,7 @@ fun Sequence<Call>.filterBySelection(list: List<String>) = filter {
         is RtmpCall -> list.contains("RTMP")
         is XmppCall -> list.contains("XMPP")
         is RmsCall -> list.contains("RMS")
-        is RedEdgeCall -> list.contains("RED EDGE")
+        is GenericHttpCall -> list.contains("RED EDGE")
         is RiotAuthCall -> list.contains("RIOT AUTH")
     }
 }

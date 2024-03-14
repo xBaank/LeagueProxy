@@ -8,8 +8,8 @@ import org.koin.core.component.KoinComponent
 import shared.Body
 import shared.Call.ConfigCall.ConfigRequest
 import shared.Call.ConfigCall.ConfigResponse
-import shared.Call.RedEdgeCall.RedEdgeRequest
-import shared.Call.RedEdgeCall.RedEdgeResponse
+import shared.Call.GenericHttpCall.GenericHttpRequest
+import shared.Call.GenericHttpCall.GenericHttpResponse
 import shared.Call.RiotAuthCall.RiotAuthRequest
 import shared.Call.RiotAuthCall.RiotAuthResponse
 import shared.extensions.inject
@@ -40,7 +40,7 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
     }.toMap()
 
     val redEdgeProxies = systemYamlPatcher.redEdgeHostsByRegion.map { (region, host) ->
-        val proxyClient = HttpProxy(host.host, httpProxyInterceptor, ::RedEdgeRequest, ::RedEdgeResponse)
+        val proxyClient = HttpProxy(host.host, httpProxyInterceptor, ::GenericHttpRequest, ::GenericHttpResponse)
         region to proxyClient
     }.toMap()
 
@@ -82,6 +82,19 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         proxyClient
     }
 
+    val riotPlatformEdge = run {
+        val port = findFreePort()
+        val proxyClient = HttpProxy(
+            port = port,
+            proxyInterceptor = httpProxyInterceptor,
+            requestCreator = ::GenericHttpRequest,
+            responseCreator = { data: Body, url: String, headers: Headers, method: HttpMethod, status: HttpStatusCode? ->
+                GenericHttpResponse(data, url, headers, method, status)
+            }
+        )
+        proxyClient
+    }
+
     val rioEntitlementAuthProxy = run {
         val port = findFreePort()
         val proxyClient = HttpProxy(
@@ -111,13 +124,14 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
                     headers = headers,
                     method = method,
                     statusCode = status,
-                    xmppProxies,
-                    rmsProxies.values.toSet(),
-                    redEdgeProxies.values.toSet(),
-                    rioAuthProxy,
-                    rioAuthenticateProxy,
-                    rioEntitlementAuthProxy,
-                    rioAffinityProxy
+                    xmppProxies = xmppProxies,
+                    rmsProxies = rmsProxies.values.toSet(),
+                    redEdgeProxies = redEdgeProxies.values.toSet(),
+                    riotAuthProxy = rioAuthProxy,
+                    riotAuthenticateProxy = rioAuthenticateProxy,
+                    rioEntitlementAuthProxy = rioEntitlementAuthProxy,
+                    riotAffinityServer = rioAffinityProxy,
+                    riotPlatformEdge = riotPlatformEdge
                 )
             }
 
@@ -133,7 +147,8 @@ fun CreateClientProxy(systemYamlPatcher: SystemYamlPatcher, onClientClose: () ->
         rioAuthProxy,
         rioEntitlementAuthProxy,
         rioAffinityProxy,
-        rioAuthenticateProxy
+        rioAuthenticateProxy,
+        riotPlatformEdge
     ) + xmppProxies.values + rtmpProxies.values + rmsProxies.values + redEdgeProxies.values
 
     return ClientProxy(
