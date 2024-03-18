@@ -74,8 +74,10 @@ fun ApplicationScope.App(isRiotClientClosed: MutableState<Boolean>) {
                         if ((it.targetDirectory + DIRECTORY_SEPARATOR + it.path).toPath() == path) {
                             val currentLastModified = path.lastModified()
                             if (lastmodified < currentLastModified) {
-                                scriptFunction.value = path.toFile().let(::eval)
-                                lastmodified = currentLastModified
+                                runCatching {
+                                    scriptFunction.value = path.toFile().let(::eval)
+                                    lastmodified = currentLastModified
+                                }.onFailure(onScriptFailure)
                             }
                         }
                     }

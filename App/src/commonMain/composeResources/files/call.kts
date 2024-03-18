@@ -97,6 +97,10 @@ import simpleJson.*
                 json["lol.client_settings.league_edge.url"] = "http://127.0.0.1:${proxy.port}"
         }
 
+        if (json["lol.client_settings.store.use_ledge"].isRight()) {
+            json["lol.client_settings.store.use_ledge"] = true
+        }
+
 
         if (json["chat.host"].isRight()) {
             val chatHost = json["chat.host"].asString().getOrThrow()

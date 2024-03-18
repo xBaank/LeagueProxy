@@ -5,6 +5,7 @@
 /Shared/build/
 /Shared/build/kotlin
 /Shared/build/classes/kotlin/jvm/main/
+/App/settings.json
 /App/build/
 /App/build/classes/kotlin/desktop/main/
 /build

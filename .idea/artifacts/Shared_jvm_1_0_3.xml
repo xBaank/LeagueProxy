@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Shared-jvm-1.0.3">
+    <output-path>$PROJECT_DIR$/Shared/build/libs</output-path>
+    <root id="archive" name="Shared-jvm-1.0.3.jar">
+      <element id="module-output" name="LeagueProxy.Shared.jvmMain" />
+    </root>
+  </artifact>
+</component>

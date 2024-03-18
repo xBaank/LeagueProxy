@@ -9,6 +9,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -75,6 +76,13 @@ class HttpProxy(
 
     override suspend fun start() {
         val server = embeddedServer(Netty, port = port) {
+            install(CORS) {
+                anyHost() // Allow requests from any origin
+                allowHeader(HttpHeaders.AccessControlAllowHeaders) // Allow all headers
+                allowHeader(HttpHeaders.AccessControlAllowMethods) // Allow all methods
+                allowHeader(HttpHeaders.AccessControlAllowOrigin) // Allow all origins
+                exposeHeader(HttpHeaders.AccessControlAllowOrigin) // Expose the Allow-Origin header
+            }
             routing {
                 route("{...}") {
                     handle {
@@ -82,7 +90,7 @@ class HttpProxy(
 
                         try {
                             val body = when {
-                                call.request.headers.isJson() -> {
+                                call.request.headers.isJson() && !url.contains("statstones") -> {
                                     val text = call.receiveText().replace("\\u0001", "")
                                     val json = text.deserialized().getOrNull()
                                     if (json != null) Body.Json(json) else Body.Text(text)
